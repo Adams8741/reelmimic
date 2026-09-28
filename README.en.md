@@ -4,7 +4,7 @@
 
 # ReelMimic
 
-**Show it a video you love. Get an animation in the same style.**
+**Show it a video you love. Get a new video in the same style.**
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-7A6BFF)](LICENSE)
 [![Claude Code](https://img.shields.io/badge/Claude_Code-supported-E86BD2)](https://docs.anthropic.com/en/docs/claude-code)
@@ -23,15 +23,21 @@
 
 ## What is this?
 
-Ever watched a short animation and thought "I want one like that, but about my thing"?
-Drop the video in (a file, a phone recording, or a YouTube link) and tell it what you want to make.
+Ever watched a video and thought "I want one in that style, but completely my own"?
 
-ReelMimic works out how the video is cut, how fast it moves and what the camera does, then writes up a plan for you.
-Nothing gets made until you say it's good. After that, several AI agents split up the work, and every shot gets
-checked by a different agent before it moves on.
+Just drop it into ReelMimic. A file, a phone recording or a YouTube link all work. Then tell it what you want to make.
 
-It copies the technique, not the footage or the characters. Everything runs on your own computer, with your own
-Claude Code or Codex account.
+First it takes the reference apart: editing rhythm, shot lengths, transitions, framing, colors and camera moves. Then
+it puts together a plan for you to check. You can chat right next to it, change settings or add assets, and start
+when you're happy.
+
+Once production starts, the work is split across several AI agents. Different parts of the video are made at the same
+time, and every shot is handed to a different agent to check. If something's wrong it goes back to be fixed, so it's
+not a one-shot generate-and-done.
+
+ReelMimic learns how the reference was made. It doesn't carry over the original footage, characters or assets.
+
+The whole thing runs on your own computer, with your own Claude Code or Codex.
 
 <p align="center">
 <picture>
@@ -42,17 +48,17 @@ Claude Code or Codex account.
 
 ## What it does
 
-- **Breaks down the reference.** Number of shots, how long each one is, BPM, transitions, colors, camera moves.
+- **Breaks down the reference.** Shot count, shot lengths, BPM, transitions, colors, framing and camera moves.
 - **Shows you the plan first.** Storyboard, characters, assets and a few style frames. Chat about it until you like it, then approve.
-- **Lots of agents at once.** Up to 6 work on different parts of the video. Each finished shot goes to a new agent for review, so nobody grades their own work.
+- **Several AI agents share the work.** Up to 6 work on different parts of the video. Each finished shot goes to a new agent for review, so nobody grades their own work.
 - **Fixes need proof.** Every fix comes with before and after screenshots, and the reviewer checks them.
 - **You can see what it's doing.** What each agent is thinking, what it ran, which frames it looked at. The full log is there too.
 - **Comment right on the video.** When it's done, scrub to any second and type a note. Send them all at once.
 - **New styles are just Markdown.** One file per style, no code.
 - **Three languages.** 繁體中文, English and 简体中文, switch in the top right.
 
-Right now it makes 2D animation: flat vector characters, watercolor, motion graphics and so on. A 30-second video takes
-about one to two hours after you approve the plan, depending on the style.
+How long it takes depends on the video's length, style and complexity. For a short video of around 60 seconds, it
+usually takes one to two hours after you approve the plan.
 
 ## Getting started
 
