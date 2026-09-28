@@ -1,4 +1,4 @@
-<p align="right"><a href="../ARCHITECTURE.md">繁體中文</a> · <a href="../en/ARCHITECTURE.md">English</a> · <b>简体中文</b></p>
+<p align="right"><a href="../ARCHITECTURE.md">English</a> · <a href="../zh-TW/ARCHITECTURE.md">繁體中文</a> · <b>简体中文</b></p>
 
 # 架构
 

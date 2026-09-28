@@ -12,7 +12,7 @@
 ![Node 20+](https://img.shields.io/badge/node-20%2B-5B57F0)
 ![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-5B57F0)
 
-[繁體中文](README.md) · [English](README.en.md) · **简体中文**
+[English](README.md) · [繁體中文](README.zh-TW.md) · **简体中文**
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/assets/home-zh-CN-dark.png">

@@ -1,128 +1,149 @@
-<p align="right"><b>繁體中文</b> · <a href="en/EXTENDING.md">English</a> · <a href="zh-CN/EXTENDING.md">简体中文</a></p>
+<p align="right"><b>English</b> · <a href="zh-TW/EXTENDING.md">繁體中文</a> · <a href="zh-CN/EXTENDING.md">简体中文</a></p>
 
-# 擴充指南
+# Extending ReelMimic
 
-ReelMimic 的擴充點由淺到深：
+Extension points, from shallow to deep:
 
-| 想做的事 | 改哪裡 | 要改程式嗎 |
+| You want to | Change | Code? |
 |---|---|---|
-| 加一種影片風格 | `.claude/skills/video-clone/styles/<name>.md` | 不用 |
-| 加一個製作引擎（新的畫法／渲染方式） | `.claude/skills/<engine>/`（一般 agent skill） | 不用 |
-| 調整 agent 在某一步怎麼做 | `app/server/prompts.mjs` | 只改文字，下一輪就生效 |
-| 加新工具給 agent 用 | `.claude/skills/video-clone/scripts/` | 寫腳本，再在 prompt／SKILL.md 提到它 |
-| 接另一種 AI 導演（新的 agent CLI） | `app/server/agents/index.mjs` | 要 |
-| 改生產線的步驟或順序 | `app/server/jobs.mjs` + `prompts.mjs` + `CONTRACT.md` | 要 |
+| Add a video style | `.claude/skills/video-clone/styles/<name>.md` | No |
+| Add a production engine (a new drawing / rendering method) | `.claude/skills/<engine>/` (an ordinary agent skill) | No |
+| Change how an agent handles a step | `app/server/prompts.mjs` | Text only, applies on the next turn |
+| Give agents a new tool | `.claude/skills/video-clone/scripts/` | Write the script, then mention it in a prompt / SKILL.md |
+| Plug in another AI director (a new agent CLI) | `app/server/agents/index.mjs` | Yes |
+| Change the steps or order of the production line | `app/server/jobs.mjs` + `prompts.mjs` + `CONTRACT.md` | Yes |
 
 ---
 
-## 1. 加一種風格
+## 1. Add a style
 
-風格＝「看到什麼樣的參考片 → 用哪個引擎、用什麼預設去做」。導演在 styling 步驟會讀 `styles/` 底下所有檔案，用「辨識特徵」比對參考片，
-挑出最符合的一個寫進 `analysis/route.json`。
+A style = "for this kind of reference → use this engine with these defaults". During the styling step the director
+reads every file in `styles/`, matches the reference against each file's recognition cues and writes the best match
+into `analysis/route.json`.
 
-1. 複製 `styles/_TEMPLATE.md` 成 `styles/<name>.md`。
-2. 填 frontmatter：
+1. Copy `styles/_TEMPLATE.md` to `styles/<name>.md`.
+2. Fill in the frontmatter:
 
    ```yaml
    ---
-   name: lofi-anime-loop        # 唯一代號，和檔名相同
-   engine: hyperframes          # .claude/skills/ 底下的資料夾名
-   medium: 2d-vector            # 2d-painted · 2d-vector · 3d-stylized · 3d-photoreal（選引擎的硬條件）
-   priority: 60                 # 兩種風格都符合時，大的優先
+   name: lofi-anime-loop        # unique id, same as the file name
+   engine: hyperframes          # folder name under .claude/skills/
+   medium: 2d-vector            # 2d-painted · 2d-vector · 3d-stylized · 3d-photoreal (hard constraint when picking an engine)
+   priority: 60                 # when two styles match, the higher one wins
    ---
    ```
-3. 寫三段：
-   - **辨識特徵**：畫面、剪接、聲音、文字各一兩句，寫「看得到、量得到」的東西（例：平均鏡頭 2–3 秒、切點跟旁白不跟拍子）。
-   - **製作預設**：比例、長度、fps、角色怎麼做（例：2D 向量角色一律用 `assets/vector_rig`）、字幕規格。
-   - **已知的坑**：做過之後踩到的問題與解法。每次製作學到新東西就補在這裡，下一支片會自動避開。
-4. 用一支代表性的參考片建專案，確認 `analysis/route.json` 選到你的風格。
+3. Write three sections:
+   - **Recognition cues**: a sentence or two each for picture, editing, sound and text — things you can see or
+     measure (e.g. average shot 2–3 s, cuts follow the narration, not the beat).
+   - **Production defaults**: aspect ratio, length, fps, how characters are made (e.g. 2D vector characters always use
+     `assets/vector_rig`), caption spec.
+   - **Known pitfalls**: problems hit in earlier productions and their fixes. Add to it whenever a production teaches
+     something new; the next video avoids it automatically.
+4. Create a project with a representative reference and check that `analysis/route.json` picks your style.
 
-不想讓某個風格參與選擇時，把檔案移到 `styles/_disabled/`。
+To take a style out of selection, move the file to `styles/_disabled/`.
 
-## 2. 加一個製作引擎
+## 2. Add a production engine
 
-引擎就是一般的 agent skill：一個資料夾，裡面有 `SKILL.md`（給 agent 的使用說明）和它需要的腳本、範本。
+An engine is an ordinary agent skill: a folder with a `SKILL.md` (instructions for the agent) and the scripts and
+templates it needs.
 
 ```
 .claude/skills/my-engine/
-  SKILL.md          frontmatter（name、description）＋ 怎麼建專案、怎麼預覽單格、怎麼輸出 MP4、規則與已知的坑
-  scripts/ …        渲染、預覽工具
-  template/ …       新專案骨架（選配）
+  SKILL.md          frontmatter (name, description) + how to create a project, preview a frame, export MP4, rules and pitfalls
+  scripts/ …        render and preview tools
+  template/ …       new-project skeleton (optional)
 ```
 
-讓它能接進生產線，`SKILL.md` 要講清楚這幾件事（setup 步驟的導演會照著建 `build/production.json`）：
+For it to plug into the production line, `SKILL.md` must make these clear (the director follows it in the setup step
+to build `build/production.json`):
 
-- **每個鏡頭一個檔案**：多個製作 agent 平行時只改自己的檔，不會互相衝突。
-- **共用檔**：角色定義、配色、字幕層、音訊放在共用檔；鏡頭只呼叫、不重畫角色的身體部位。
-- **預覽指令**：怎麼快速渲染某個時間點的單格與裁切（審查全靠它）。HyperFrames 專案可直接用 `scripts/hf_frames.py`。
-- **輸出指令**：怎麼渲染整支 MP4、怎麼混音。
-- **確定性**：每一格都只由時間決定（不要用 `Math.random()` 或跨格狀態），才能平行渲染、跳格審查。
+- **One file per shot**: parallel builders each edit only their own files, so they never collide.
+- **Shared files**: character definitions, palette, caption layer and audio live in shared files; shots call
+  characters, they never redraw body parts.
+- **Preview command**: how to quickly render a single frame and a crop at a given time (all review depends on it).
+  HyperFrames projects can use `scripts/hf_frames.py` directly.
+- **Export command**: how to render the full MP4 and mix audio.
+- **Determinism**: every frame depends only on time (no `Math.random()`, no cross-frame state), so frames can be
+  rendered in parallel and reviewed out of order.
 
-然後寫一個指向它的風格檔（上一節）。第三方 skill 放進來前，請先看過它的腳本，並把授權補進 `THIRD_PARTY_NOTICES.md`。
+Then write a style file pointing to it (previous section). Before adding a third-party skill, read its scripts and add
+its license to `THIRD_PARTY_NOTICES.md`.
 
-### 角色系統
+### Character systems
 
-- `assets/vector_rig/`：2D 向量角色，骨架（脖子、肩、肘、腕、髖、膝）＋每個深度層只描一次外框，四肢永遠接在身上。用法見其 README。
-- `assets/cast_rig.js`：painted-animation（水彩手繪）用的角色骨架。
+- `assets/vector_rig/`: 2D vector characters — a skeleton (neck, shoulders, elbows, wrists, hips, knees) with one
+  outline per depth layer, so limbs are always attached. See its README.
+- `assets/cast_rig.js`: character skeleton for painted-animation (hand-painted watercolor).
 
-新引擎若有自己的角色做法，請一樣遵守「角色定義在共用檔、每個角色一個檔、鏡頭只給姿勢參數」，角色關才能平行審查與修正。
+If a new engine has its own way of making characters, keep the same rule — "characters defined in shared files, one
+file per character, shots only pass pose parameters" — so the cast gate can review and fix them in parallel.
 
-## 3. 調整 agent 的做法（prompts.mjs）
+## 3. Tune agent behaviour (prompts.mjs)
 
-`app/server/prompts.mjs` 每個鍵對應生產線的一步：
+Each key in `app/server/prompts.mjs` is one step of the pipeline:
 
-| 鍵 | 誰 | 做什麼 |
+| Key | Who | Does |
 |---|---|---|
-| `style` · `plan` · `replan` | 導演 | 選風格、寫企劃核心、依意見修改 |
-| `pre_cast` · `pre_assets` · `plan_frames` | 角色 · 素材 · 導演 | 前製平行：每個角色的草稿、抓素材、整合並畫定調畫面 |
-| `setup` | 導演 | 建引擎專案、共用檔、角色、分段 |
-| `cast_qa` · `cast_fix` | 審查員 · 修正 | 角色關 |
-| `build_chunk` · `shot_qa` · `fix_chunk` | 製作 · 審查員 · 製作 | 分段製作；每一鏡做完由一個審查員審（`shots`/`out` 參數指定鏡頭與輸出檔） |
-| `shared_fix` | 導演 | 製作 agent 回報的共用檔問題 |
-| `assemble` · `critique` · `revise` | 導演 · 評審 · 導演 | 組裝、最後評審、修改 |
+| `style` · `plan` · `replan` | director | pick the style, write the plan core, revise from feedback |
+| `pre_cast` · `pre_assets` · `plan_frames` | character · assets · director | parallel pre-production: per-character drafts, asset search, merge and paint style frames |
+| `setup` | director | engine project, shared files, characters, segments |
+| `cast_qa` · `cast_fix` | reviewer · fixer | cast gate |
+| `build_chunk` · `shot_qa` · `fix_chunk` | builder · reviewer · builder | segment production; each finished shot gets its own reviewer (`shots` / `out` select the shots and output file) |
+| `shared_fix` | director | shared-file problems reported by builders |
+| `assemble` · `critique` · `revise` | director · critic · director | assembly, final critique, revisions |
 
-共用片段：`RULES`（內容與授權原則）、`SPEED`（效率規則）、`EYE`（人眼檢查清單）、`QA_OUT`（審查輸出格式與 blocker/polish 定義）。
-伺服器每次派工前都會檢查這個檔有沒有改過，**改完下一輪 agent 就用新指令，不用重啟**。
+Shared fragments: `RULES` (content and licensing), `SPEED` (efficiency rules), `EYE` (human-eye checklist), `QA_OUT`
+(review output format and the blocker/polish definitions).
+The server checks this file for changes before every dispatch — **edits apply from the next agent turn, no restart**.
 
-建議做法：先用 `python .claude/skills/video-clone/scripts/timeline.py projects/<id>` 看時間花在哪、哪一關反覆退回，再決定改哪段指令。
-把「最後評審常退回的東西」往前移到 setup 或 build 階段定成規格，是最有效的提速方式。
+Suggested approach: run `python .claude/skills/video-clone/scripts/timeline.py projects/<id>` to see where time went
+and which gate kept sending work back, then decide what to change. Moving "what the final critic keeps rejecting"
+forward into the setup or build specs is the most effective speed-up.
 
-## 4. 接另一種 AI 導演
+## 4. Plug in another AI director
 
-在 `app/server/agents/index.mjs`：
+In `app/server/agents/index.mjs`:
 
-1. 寫一個 `xxxArgs(sessionId, cwd)`：無互動、自動核准檔案修改、可接續 session 的命令列參數。
-2. 寫一個 `parseXxx(obj, emit, st)`：把 CLI 的 JSON 串流轉成統一事件：
-   `session {id}`、`text {text}`、`thinking {text}`、`tool {name, detail}`、`error {text}`，最後 `done {ok, text}`。
-3. 在 `runAgent` 與 `agentStatus` 加上新的 `kind`，前端 `App.jsx` 的選擇器加一個選項。
+1. Write `xxxArgs(sessionId, cwd)`: command-line arguments for a non-interactive run that auto-approves file edits
+   and can resume a session.
+2. Write `parseXxx(obj, emit, st)`: turn the CLI's JSON stream into the common events:
+   `session {id}`, `text {text}`, `thinking {text}`, `tool {name, detail}`, `error {text}`, and finally `done {ok, text}`.
+3. Add the new `kind` to `runAgent` and `agentStatus`, and an option to the picker in the web app's `App.jsx`.
 
-agent 需要能：讀寫 repo 內檔案、執行 shell（python、node、ffmpeg）、看圖片（審查靠它）、接續對話。
+The agent must be able to: read and write files in the repo, run a shell (python, node, ffmpeg), look at images
+(review depends on it) and resume a conversation.
 
-## 5. 改生產線
+## 5. Change the production line
 
-`app/server/jobs.mjs` 的主要函式：
+Main functions in `app/server/jobs.mjs`:
 
-- `production()`：setup → `castGate()`（與分段製作同時跑）→ `runChunk()` × N → assemble。
-- `castGate()` / `castSerial()`：每個角色平行審查修正；一個角色或共用檔時走序列版。
-- `finalPanel()`：最後評審 ⇄ 修改。
-- `turn()`：派一次 agent 回合（session 管理、全域名額、必須檔案檢查）。
+- `production()`: setup → `castGate()` (runs alongside segment building) → `runChunk()` × N → assemble.
+- `castGate()` / `castSerial()`: per-character parallel review and fixing; the serial version is used for a single
+  character or shared-file work.
+- `finalPanel()`: final critic ⇄ revise.
+- `turn()`: dispatches one agent turn (session handling, global slots, required-file check).
 
-改步驟時三個地方要一起改：`jobs.mjs`（流程）、`prompts.mjs`（指令）、`CONTRACT.md`（新檔案的格式），前端要顯示的話再改 `Project.jsx`。
-參數（平行數、每關輪數）在 `CONFIG`，也可以用環境變數調整。
+When changing a step, change three places together: `jobs.mjs` (flow), `prompts.mjs` (instructions) and `CONTRACT.md`
+(format of any new file); plus `Project.jsx` if the web app should show it.
+Parameters (parallelism, rounds per gate) are in `CONFIG` and can also be set through environment variables.
 
-## 6. 介面文字與翻譯
+## 6. Adding UI text / translations
 
-元件裡的介面文字一律寫繁體中文。`app/web/src/i18n.js` 在執行時翻譯整個頁面：英文來自 `EN` 對照表（含數字的字串用 `EN_RE` 樣式），簡體中文由 OpenCC 自動轉換。
-新增文字時請在 `EN` 補上英文；不該被翻譯的元素（使用者內容、檔名）加 `data-no-i18n`。
+Interface strings are written in Traditional Chinese in the components. `app/web/src/i18n.js` translates the page at
+runtime: English comes from the `EN` table (plus `EN_RE` patterns for strings with numbers), Simplified Chinese is
+converted automatically with OpenCC. When you add a new string, add its English entry to `EN`; mark elements that must
+never be translated (user content, file names) with `data-no-i18n`.
 
-## 7. 開發
+## 7. Development
 
 ```bash
 cd app
-npm run server      # 只跑後端（改 server/ 後重啟：bash app/restart.sh）
-npm run web         # 前端開發伺服器 http://localhost:5173（熱更新，/api 轉到 4318）
-npm run build       # 輸出 app/dist，給 npm start / start.sh 用
-npm run doctor      # 環境檢查
+npm run server      # backend only (after editing server/, restart with: bash app/restart.sh)
+npm run web         # UI dev server http://localhost:5173 (hot reload, /api proxied to 4318)
+npm run build       # build app/dist for npm start / start.sh
+npm run doctor      # environment check
 ```
 
-小型測試：`_smoke/`（本機，不進版本控制）放過單一元件的驗證頁；完整驗證就是實際跑一支 30 秒短片，然後用 `timeline.py` 看時間、逐格看成片。
+Small tests: `_smoke/` (local, not version-controlled) holds single-component check pages; the full check is to
+produce a real 30-second video, then look at the time breakdown with `timeline.py` and inspect the film frame by frame.

@@ -1,26 +1,36 @@
+<p align="right"><b>English</b> · <a href="docs/zh-TW/CONTRIBUTING.md">繁體中文</a></p>
+
 # Contributing
 
-感謝你想一起改進 ReelMimic！
+Thanks for wanting to help make ReelMimic better!
 
-## 開發環境
-依 README 安裝後：
+## Setup
+
+Install it as described in the [README](README.md), then:
 
 ```bash
 cd app
-npm run server   # 後端（改 server/ 後：bash app/restart.sh）
-npm run web      # 前端熱更新 http://localhost:5173
-npm run doctor   # 環境檢查
+npm run server   # backend (after editing server/, restart with: bash app/restart.sh)
+npm run web      # UI with hot reload at http://localhost:5173
+npm run doctor   # environment check
 ```
 
-架構說明在 `docs/ARCHITECTURE.md`，擴充方式在 `docs/EXTENDING.md`。
+How it works is in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), and how to extend it is in [docs/EXTENDING.md](docs/EXTENDING.md).
 
-## 最常見的貢獻
-- **新風格**：`.claude/skills/video-clone/styles/<name>.md`，附一段你用來測試的參考片描述（不要附上受版權保護的影片檔）。
-- **「已知的坑」**：做片時踩到的問題與解法，補進對應風格檔或引擎的 SKILL.md。
-- **新製作引擎**：一個 agent skill 資料夾；第三方 skill 請附上來源與授權，並更新 `THIRD_PARTY_NOTICES.md`。
-- **流程與指令**：改 `app/server/prompts.mjs` 或 `jobs.mjs` 時，請說明用哪支片驗證、`timeline.py` 的前後時間比較。
+## Good first contributions
 
-## 提交前
-- `npm run build` 能過，`node --check` 過 `app/server/*.mjs`。
-- 不要提交 `projects/`、金鑰（`~/.reelmimic/secrets.json`）、參考影片或任何你沒有授權的素材。
-- 程式碼註解與文件用繁體中文或英文皆可，保持和周圍一致。
+- **A new style**: add `.claude/skills/video-clone/styles/<name>.md`, with a short description of the reference you
+  tested it on (please don't attach copyrighted video files).
+- **Known pitfalls**: problems you ran into while making a video and how you fixed them. Add them to the matching
+  style file or the engine's `SKILL.md`.
+- **A new rendering engine**: an agent skill folder. For third-party skills, include the source and license and update
+  `THIRD_PARTY_NOTICES.md`.
+- **Pipeline and prompts**: if you change `app/server/prompts.mjs` or `jobs.mjs`, say which video you tested with and
+  include a before/after timing from `timeline.py`.
+
+## Before you open a PR
+
+- `npm run build` passes, and `node --check` passes for `app/server/*.mjs`.
+- Don't commit `projects/`, API keys (`~/.reelmimic/secrets.json`), reference videos, or any asset you don't have the
+  rights to.
+- Comments and docs can be in English or Traditional Chinese. Match what's around them.

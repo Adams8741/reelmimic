@@ -4,7 +4,7 @@
 
 # ReelMimic
 
-**丟一支你喜歡的影片，做一支一樣風格的新影片。**
+**Show it a video you love. Get a new video in the same style.**
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-7A6BFF)](LICENSE)
 [![Claude Code](https://img.shields.io/badge/Claude_Code-supported-E86BD2)](https://docs.anthropic.com/en/docs/claude-code)
@@ -12,96 +12,106 @@
 ![Node 20+](https://img.shields.io/badge/node-20%2B-5B57F0)
 ![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-5B57F0)
 
-**繁體中文** · [English](README.en.md) · [简体中文](README.zh-CN.md)
+**English** · [繁體中文](README.zh-TW.md) · [简体中文](README.zh-CN.md)
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/home-zh-TW-dark.png">
-  <img src="docs/assets/home-zh-TW-light.png" alt="ReelMimic 首頁" width="860">
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/home-en-dark.png">
+  <img src="docs/assets/home-en-light.png" alt="ReelMimic home page" width="860">
 </picture>
 
 </div>
 
-## 這是什麼
+## What is this?
 
-看到一支很喜歡的影片，想做一支同樣風格、但內容完全是自己的？
+Ever watched a video and thought "I want one in that style, but completely my own"?
 
-把影片丟進 ReelMimic 就好。檔案、手機錄影或 YouTube 連結都可以，再告訴它你想做什麼。
+Just drop it into ReelMimic. A file, a phone recording or a YouTube link all work. Then tell it what you want to make.
 
-它會先把參考片拆開來看，像是剪輯節奏、鏡頭長度、轉場、構圖、配色和運鏡，再整理成一份企劃給你確認。你可以直接在旁邊聊天、改設定、補素材，覺得可以了再開始做。
+First it takes the reference apart: editing rhythm, shot lengths, transitions, framing, colors and camera moves. Then
+it puts together a plan for you to check. You can chat right next to it, change settings or add assets, and start
+when you're happy.
 
-真正開始製作後，工作會拆給多個 AI 分工。不同段落可以同時進行，每一鏡做完也會交給另一個 AI 檢查，有問題就退回去改，不是生成一次就直接交差。
+Once production starts, the work is split across several AI agents. Different parts of the video are made at the same
+time, and every shot is handed to a different agent to check. If something's wrong it goes back to be fixed, so it's
+not a one-shot generate-and-done.
 
-ReelMimic 學的是參考片的做法，不是把原本的畫面、角色或素材搬過來。
+ReelMimic learns how the reference was made. It doesn't carry over the original footage, characters or assets.
 
-整套流程都跑在你自己的電腦上，用你自己的 Claude Code 或 Codex。
+The whole thing runs on your own computer, with your own Claude Code or Codex.
 
 <p align="center">
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/flow-zh-TW-dark.png">
-  <img src="docs/assets/flow-zh-TW-light.png" alt="ReelMimic 流程" width="860">
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/flow-en-dark.png">
+  <img src="docs/assets/flow-en-light.png" alt="How ReelMimic works" width="860">
 </picture>
 </p>
 
-## 可以做到什麼
+## What it does
 
-- **拆解參考片**：鏡頭數量、鏡頭長度、BPM、轉場、配色、構圖和運鏡都會整理出來。
-- **先給你看企劃**：分鏡、角色、素材、定調畫面都在裡面。想改就在旁邊聊，改到滿意再按核准。
-- **多個 AI 分工**：最多 6 個同時做不同段落。每做完一鏡就換一個新的 AI 來審，不會自己審自己。
-- **說修好要拿圖來看**：每個修正都附修改前後的截圖，審查的人對過才算數。
-- **看得到它在幹嘛**：每個 AI 正在想什麼、跑了什麼、看了哪幾格，畫面上都有，也能打開完整 log。
-- **直接在影片上留言**：成片出來後，拉到哪一秒就在那一秒打字，寫完一起送出。
-- **加新風格不用寫程式**：一種風格就是一個 Markdown 檔。
-- **三種語言**：繁中、英文、簡中，右上角切換。
+- **Breaks down the reference.** Shot count, shot lengths, BPM, transitions, colors, framing and camera moves.
+- **Shows you the plan first.** Storyboard, characters, assets and a few style frames. Chat about it until you like it, then approve.
+- **Several AI agents share the work.** Up to 6 work on different parts of the video. Each finished shot goes to a new agent for review, so nobody grades their own work.
+- **Fixes need proof.** Every fix comes with before and after screenshots, and the reviewer checks them.
+- **You can see what it's doing.** What each agent is thinking, what it ran, which frames it looked at. The full log is there too.
+- **Comment right on the video.** When it's done, scrub to any second and type a note. Send them all at once.
+- **New styles are just Markdown.** One file per style, no code.
+- **Three languages.** 繁體中文, English and 简体中文, switch in the top right.
 
-實際生成時間會跟影片長度、風格和複雜度有關。以 60 秒左右的短片來說，企劃核准後通常需要一到兩小時。
+How long it takes depends on the video's length, style and complexity. For a short video of around 60 seconds, it
+usually takes one to two hours after you approve the plan.
 
-## 開始用
+## Getting started
 
-先裝好這些：Node.js 20 以上、Python 3.10 以上、FFmpeg、Chrome，還有 [Claude Code](https://docs.anthropic.com/en/docs/claude-code) 或 [Codex CLI](https://github.com/openai/codex) 其中一個（要先登入）。
+You'll need Node.js 20+, Python 3.10+, FFmpeg, Chrome, and either
+[Claude Code](https://docs.anthropic.com/en/docs/claude-code) or [Codex CLI](https://github.com/openai/codex) (logged in).
 
 ```bash
 git clone https://github.com/edenfunf/reelmimic.git && cd reelmimic
-./install.sh      # Windows 直接點兩下 install.bat
-./start.sh        # Windows 直接點兩下 start.bat
+./install.sh      # on Windows, double-click install.bat
+./start.sh        # on Windows, double-click start.bat
 ```
 
-打開 <http://localhost:4318> 就能用了。安裝腳本會順便檢查環境，少了什麼會跟你說；之後想再檢查一次，跑 `cd app && npm run doctor`。
-Claude Code 會自己讀到 repo 裡的 skills，Codex 會讀 `AGENTS.md`，不用另外設定。
+Then open <http://localhost:4318>. The install script checks your setup and tells you if anything's missing. You can run
+the check again any time with `cd app && npm run doctor`. Claude Code picks up the skills in this repo on its own, and
+Codex reads `AGENTS.md`, so there's nothing else to set up.
 
-### 做第一支影片
+### Your first video
 
-1. 在首頁丟參考影片或貼連結，寫你想做什麼，選要用 Claude Code 還是 Codex。
-2. 等它拆解完、寫好企劃。有意見就在右邊聊天框講，也可以貼截圖。
-3. 企劃裡如果有要你給的東西（像歌詞），給它或跳過，然後按「核准並開始生成」。
-4. 「生產線」分頁可以看到每個角色、每一段做到哪、審查截圖長怎樣。
-5. 做好之後覺得哪裡不對，就直接在那一秒留言。
+1. On the home page, drop in a reference video or paste a link, say what you want, and pick Claude Code or Codex.
+2. Wait for the breakdown and the plan. If you want changes, say so in the chat on the right. Screenshots work too.
+3. If the plan asks you for something (lyrics, say), add it or skip it, then hit **Approve and start**.
+4. The **Production line** tab shows where each character and each part of the video is, with the review screenshots.
+5. When it's done, leave a note at whatever second looks off.
 
-## 設定
+## Settings
 
-金鑰跟一些路徑放在 `~/.reelmimic/secrets.json`。這個檔在 repo 外面，不會被 commit，格式可以照 [`secrets.example.json`](secrets.example.json)。
+API keys and a few paths go in `~/.reelmimic/secrets.json`. That file lives outside the repo, so it never gets
+committed. See [`secrets.example.json`](secrets.example.json) for the format.
 
-| 鍵 | 用來做什麼 |
+| Key | What it's for |
 |---|---|
-| `YATING_KEY` | 雅婷的台灣華語語音，拿來配旁白 |
-| `PIXABAY_KEY`、`FREESOUND_KEY` | 可以找到更多能合法使用的圖片、音樂、音效（沒有也行，會用 Openverse） |
-| `FFMPEG_DIR`、`CHROME_PATH`、`CODEX_BIN`、`PYTHON` | 這些工具不在 PATH 上的話，在這裡指定位置 |
-| `BUILDERS`、`MAX_AGENTS` | 一支片同時幾個 AI 在做（預設 6）、所有專案加起來最多幾個（預設 12） |
-| `PORT` | 網站用的埠號（預設 4318） |
+| `YATING_KEY` | Yating's Taiwanese Mandarin voices, for narration |
+| `PIXABAY_KEY`, `FREESOUND_KEY` | More images, music and sound effects you're allowed to use (optional, Openverse works without a key) |
+| `FFMPEG_DIR`, `CHROME_PATH`, `CODEX_BIN`, `PYTHON` | Where to find these tools if they're not on your PATH |
+| `BUILDERS`, `MAX_AGENTS` | How many agents work on one video at once (default 6), and the limit across all projects (default 12) |
+| `PORT` | Web port (default 4318) |
 
-## 文件
+## Docs
 
-- [架構](docs/ARCHITECTURE.md)：整個流程怎麼跑、檔案怎麼放、怎麼接 AI
-- [擴充](docs/EXTENDING.md)：怎麼加風格、加製作引擎、接別的 AI
-- [參與開發](CONTRIBUTING.md)
+- [Architecture](docs/ARCHITECTURE.md): how the whole thing runs, where files go, how the AI plugs in
+- [Extending](docs/EXTENDING.md): adding styles, rendering engines, or another AI
+- [Contributing](CONTRIBUTING.md)
 
-## 使用原則
+## Ground rules
 
-- 參考片只學手法，像節奏、構圖、轉場、笑點怎麼安排；畫面、角色、Logo、素材都不會拿來用。
-- 角色預設是原創的。你有自己的角色設計圖，就照你的做。
-- 網路上找來的素材會記下來源、作者跟授權，授權不清楚的會特別標出來。
-- 歌詞只用你給的文字，不會自己去下載商業歌曲。
-- 做出來的影片要怎麼用，請自己確認有沒有權利。
+- It learns technique from the reference (pacing, framing, transitions, how the jokes land). It never reuses the
+  footage, characters, logos or assets.
+- Characters are original unless you bring your own designs, in which case it follows yours.
+- Anything it finds online gets logged with its source, author and license. Unclear licenses are flagged.
+- Lyrics only come from text you give it. It won't download commercial songs.
+- What you do with the videos is up to you, so make sure you have the rights.
 
-## 授權
+## License
 
-程式碼用 [MIT](LICENSE) 授權。裡面附的第三方 skill 和素材照它們原本的授權，細節在 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
+The code is [MIT](LICENSE). Third-party skills and assets bundled here keep their own licenses, listed in
+[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

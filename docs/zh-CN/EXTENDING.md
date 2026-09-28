@@ -1,4 +1,4 @@
-<p align="right"><a href="../EXTENDING.md">繁體中文</a> · <a href="../en/EXTENDING.md">English</a> · <b>简体中文</b></p>
+<p align="right"><a href="../EXTENDING.md">English</a> · <a href="../zh-TW/EXTENDING.md">繁體中文</a> · <b>简体中文</b></p>
 
 # 扩充指南
 
