@@ -114,7 +114,7 @@ projects/<id>/
 
 | | Claude Code | Codex |
 |---|---|---|
-| Command | `claude -p --output-format stream-json --verbose --permission-mode acceptEdits --allowedTools …` | `codex exec --json -c sandbox_mode=workspace-write -c approval_policy=never …` |
+| Command | `claude -p --output-format stream-json --verbose --permission-mode acceptEdits --allowedTools …` | `codex exec --json -c sandbox_mode=danger-full-access -c approval_policy=never (CODEX_SANDBOX) …` |
 | Resume | `--resume <session>` | `exec resume <thread>` |
 | Prompt | stdin | stdin |
 

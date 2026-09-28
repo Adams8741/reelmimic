@@ -85,6 +85,7 @@ Claude Code 會自己讀到 repo 裡的 skills，Codex 會讀 `AGENTS.md`，不�
 | `YATING_KEY` | 雅婷的台灣華語語音，拿來配旁白 |
 | `PIXABAY_KEY`、`FREESOUND_KEY` | 可以找到更多能合法使用的圖片、音樂、音效（沒有也行，會用 Openverse） |
 | `FFMPEG_DIR`、`CHROME_PATH`、`CODEX_BIN`、`PYTHON` | 這些工具不在 PATH 上的話，在這裡指定位置 |
+| `CODEX_SANDBOX` | Codex 的沙盒模式（預設 `danger-full-access`，和 Claude Code 允許 Bash 時一樣；`workspace-write` 會讓 Chrome 渲染跑不起來） |
 | `BUILDERS`、`MAX_AGENTS` | 一支片同時幾個 AI 在做（預設 6）、所有專案加起來最多幾個（預設 12） |
 | `PORT` | 網站用的埠號（預設 4318） |
 

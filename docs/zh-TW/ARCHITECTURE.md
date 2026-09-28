@@ -101,7 +101,7 @@ projects/<id>/
 
 | | Claude Code | Codex |
 |---|---|---|
-| 指令 | `claude -p --output-format stream-json --verbose --permission-mode acceptEdits --allowedTools …` | `codex exec --json -c sandbox_mode=workspace-write -c approval_policy=never …` |
+| 指令 | `claude -p --output-format stream-json --verbose --permission-mode acceptEdits --allowedTools …` | `codex exec --json -c sandbox_mode=danger-full-access -c approval_policy=never (CODEX_SANDBOX) …` |
 | 接續對話 | `--resume <session>` | `exec resume <thread>` |
 | 指令傳遞 | stdin | stdin |
 

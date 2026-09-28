@@ -56,9 +56,12 @@ function parseClaude(obj, emit, st) {
 }
 
 function codexArgs(sessionId, cwd) {
-  // workspace-write sandbox, no approval prompts (headless), network on (asset search / yt-dlp). Set via -c: works for exec and resume.
-  const common = ['--json', '--skip-git-repo-check', '-c', 'sandbox_mode=workspace-write', '-c', 'approval_policy=never',
-    '-c', 'sandbox_workspace_write.network_access=true'];
+  // No approval prompts (headless). Codex's workspace-write sandbox can't start Chrome (spawn EPERM), and every render
+  // needs it, so the default is full access — the same reach Claude Code gets with Bash allowed. Set CODEX_SANDBOX=
+  // workspace-write to keep the sandbox (planning works; rendering won't). Set via -c: works for exec and resume.
+  const mode = process.env.CODEX_SANDBOX || 'danger-full-access';
+  const common = ['--json', '--skip-git-repo-check', '-c', `sandbox_mode=${mode}`, '-c', 'approval_policy=never',
+    ...(mode === 'workspace-write' ? ['-c', 'sandbox_workspace_write.network_access=true'] : [])];
   return sessionId ? ['exec', 'resume', ...common, sessionId, '-'] : ['exec', ...common, '-C', cwd, '-'];
 }
 function parseCodex(obj, emit, st) {
