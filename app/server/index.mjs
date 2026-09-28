@@ -7,6 +7,8 @@ import { existsSync, mkdirSync, renameSync } from 'node:fs';
 import { join, extname, resolve, sep } from 'node:path';
 import { agentStatus } from './agents/index.mjs';
 import * as J from './jobs.mjs';
+// Ctrl+C / kill: stop the agents first (the next start marks their turns interrupted, and Retry resumes them)
+for (const sig of ['SIGINT', 'SIGTERM']) process.on(sig, () => { J.stopAll(); setTimeout(() => process.exit(0), 800); });
 
 const PORT = +(process.env.PORT || 4318);
 const app = express();

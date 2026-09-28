@@ -40,6 +40,8 @@ export const CONFIG = {
 
 export const bus = new EventEmitter(); bus.setMaxListeners(100);
 const running = new Map();   // id → Set<AbortController>
+// Stop every agent this server started (on shutdown), so none keeps working unseen after a restart.
+export function stopAll() { for (const set of running.values()) for (const ac of set) ac.abort(); }
 
 const now = () => new Date().toISOString();
 export const dirOf = (id) => join(PROJECTS, id);

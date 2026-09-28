@@ -7,10 +7,10 @@ if [ "$1" != "--force" ]; then
   BUSY=$(curl -s -m 2 localhost:${PORT:-4318}/api/projects | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{try{const W=['analyzing','styling','planning','replanning','producing','revising','critiquing'];console.log(JSON.parse(s).filter(p=>W.includes(p.stage)).map(p=>p.id+'('+p.stage+')').join(' '))}catch{}})")
   if [ -n "$BUSY" ]; then echo "not restarting — still working: $BUSY  (use --force to restart anyway)"; exit 2; fi
 fi
-# stop only the server on this port (other checkouts / ports keep running)
+# stop only the server on this port (other checkouts / ports keep running), together with the agents it started
 P=${PORT:-4318}
 if command -v powershell >/dev/null 2>&1; then
-  powershell -NoProfile -Command "Get-NetTCPConnection -LocalPort $P -State Listen -ErrorAction SilentlyContinue | % { Stop-Process -Id \$_.OwningProcess -Force }" >/dev/null 2>&1 || true
+  powershell -NoProfile -Command "Get-NetTCPConnection -LocalPort $P -State Listen -ErrorAction SilentlyContinue | % { taskkill /PID \$_.OwningProcess /T /F }" >/dev/null 2>&1 || true
 elif command -v lsof >/dev/null 2>&1; then
   lsof -ti tcp:$P -sTCP:LISTEN | xargs kill 2>/dev/null || true
 else
