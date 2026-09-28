@@ -4,12 +4,12 @@
 // OpenCC (Taiwan → Mainland phrasing), which also converts the AI's own messages. Text the user types is never touched.
 
 export const LANGS = [
-  { id: 'zh-TW', label: '繁體中文', short: '繁' },
   { id: 'en', label: 'English', short: 'EN' },
+  { id: 'zh-TW', label: '繁體中文', short: '繁' },
   { id: 'zh-CN', label: '简体中文', short: '简' },
 ];
 const store = { get: (k) => { try { return localStorage.getItem(k); } catch { return null; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch {} } };
-export let lang = LANGS.some((l) => l.id === store.get('lang')) ? store.get('lang') : 'zh-TW';
+export let lang = LANGS.some((l) => l.id === store.get('lang')) ? store.get('lang') : 'en';   // default for first-time visitors; the menu (top right) remembers a choice
 
 // ---------- English ----------
 const EN = {

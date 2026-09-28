@@ -545,6 +545,8 @@ h1, h2, h3 { font-family: var(--font-display); margin: 0; letter-spacing: -.022e
 .lg-bar select, .lg-bar input { height: 32px; border: 0; outline: 0; border-radius: 9px; background: var(--fill-2); padding: 0 10px; font-size: 13px; color: var(--label); }
 .lg-bar input { flex: 1; min-width: 0; }
 .lg-bar input:focus, .lg-bar select:focus { box-shadow: inset 0 0 0 1.5px var(--accent); }
+/* the native option list doesn't inherit the translucent fill: give it a solid surface so text stays readable in both themes */
+.lg-bar select option { background: var(--surface); color: var(--label); }
 .lg-body { flex: 1; overflow: auto; padding: 6px 0; font-family: var(--mono); font-size: 11.5px; line-height: 1.55; }
 .lg-row { display: grid; grid-template-columns: 58px 74px 1fr; gap: 8px; padding: 3px 12px; border-left: 2px solid transparent; }
 .lg-row:hover { background: var(--fill-2); }
