@@ -16,18 +16,18 @@
 
 <table>
   <tr>
-    <td align="center" width="33%"><img src="docs/assets/demo-picnic.gif" alt="First Picnic"></td>
+    <td align="center" width="33%"><img src="docs/assets/demo-sugar.gif" alt="Sugar Rush"></td>
+    <td align="center" width="33%"><img src="docs/assets/demo-sunshine-boy.gif" alt="Sunshine Boy"></td>
     <td align="center" width="33%"><img src="docs/assets/demo-cat-bath.gif" alt="Bath Time"></td>
-    <td align="center" width="33%"><img src="docs/assets/demo-grandma-phone.gif" alt="Grandma's Phone Class"></td>
   </tr>
   <tr>
-    <td align="center"><b>First Picnic</b><br><sub>hand-painted watercolor · 30 s</sub></td>
+    <td align="center"><b>Sugar Rush</b><br><sub>music video · hand-painted · 58 s</sub></td>
+    <td align="center"><b>Sunshine Boy</b><br><sub>music video · hand-painted · 63 s</sub></td>
     <td align="center"><b>Bath Time</b><br><sub>narrated comic · 30 s</sub></td>
-    <td align="center"><b>Grandma's Phone Class</b><br><sub>narrated comic · 30 s</sub></td>
   </tr>
 </table>
 
-<sub>Made with ReelMimic, each from a reference video and a one-line brief. Characters and stories are original; captions are in Traditional Chinese.</sub>
+<sub>Each one made with ReelMimic from a reference video and a one-line brief. Previews are silent, with the lyrics cropped out.</sub>
 
 </div>
 
@@ -80,7 +80,7 @@ The whole thing runs on your own computer, with your own Claude Code or Codex.
   [HyperFrames](https://github.com/heygen-com/hyperframes)) and hand-painted watercolor (built on
   [painted-animation](https://github.com/tuzhechen2005/painted-animation)). When a reference doesn't match a known
   style, it uses the closest engine and writes up a proposal for a new style.
-- **It takes a while.** A 30–60 second video usually takes 1–3 hours after you approve the plan, depending on the
+- **It takes a while.** A 30–60 second video usually takes 1–3.5 hours after you approve the plan, depending on the
   length and the look. Watercolor is the slowest, because every frame is painted.
 - **It uses your AI plan.** All the work runs through your Claude Code or Codex account, so it counts toward that
   account's usage. If you hit a limit, the job pauses and can pick up where it stopped.

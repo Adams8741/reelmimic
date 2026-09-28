@@ -16,18 +16,18 @@
 
 <table>
   <tr>
-    <td align="center" width="33%"><img src="docs/assets/demo-picnic.gif" alt="第一次野餐"></td>
+    <td align="center" width="33%"><img src="docs/assets/demo-sugar.gif" alt="Sugar Rush"></td>
+    <td align="center" width="33%"><img src="docs/assets/demo-sunshine-boy.gif" alt="陽光宅男"></td>
     <td align="center" width="33%"><img src="docs/assets/demo-cat-bath.gif" alt="橘寶洗澡記"></td>
-    <td align="center" width="33%"><img src="docs/assets/demo-grandma-phone.gif" alt="阿嬤的手機教室"></td>
   </tr>
   <tr>
-    <td align="center"><b>第一次野餐</b><br><sub>手繪水彩 · 30 秒</sub></td>
+    <td align="center"><b>Sugar Rush</b><br><sub>MV · 手繪水彩 · 58 秒</sub></td>
+    <td align="center"><b>陽光宅男</b><br><sub>MV · 手繪水彩 · 63 秒</sub></td>
     <td align="center"><b>橘寶洗澡記</b><br><sub>旁白漫畫 · 30 秒</sub></td>
-    <td align="center"><b>阿嬤的手機教室</b><br><sub>旁白漫畫 · 30 秒</sub></td>
   </tr>
 </table>
 
-<sub>都是用 ReelMimic 做的：各給一支參考影片加一句需求。角色和故事都是原創。</sub>
+<sub>都是用 ReelMimic 做的：各給一支參考影片加一句需求。預覽沒有聲音，也裁掉了歌詞字幕。</sub>
 
 </div>
 
@@ -73,7 +73,7 @@ ReelMimic 學的是參考片的做法，不是把原本的畫面、角色或素�
 ## 先說清楚
 
 - **目前只做 2D，有兩種畫法：** 乾淨的向量／動態圖像（以 [HyperFrames](https://github.com/heygen-com/hyperframes) 為基礎），以及手繪水彩（以 [painted-animation](https://github.com/tuzhechen2005/painted-animation) 為基礎）。參考片對不到已知風格時，會用最接近的畫法做，並寫一份新風格的建議。
-- **需要一點時間。** 30–60 秒的影片，企劃核准後通常要 1–3 小時，看長度和畫風。手繪水彩最慢，因為每一格都是畫出來的。
+- **需要一點時間。** 30–60 秒的影片，企劃核准後通常要 1–3.5 小時，看長度和畫風。手繪水彩最慢，因為每一格都是畫出來的。
 - **用的是你的 AI 額度。** 所有工作都透過你的 Claude Code 或 Codex 帳號跑，會算進那個帳號的用量。額度用完時會暫停，之後可以從停下來的地方繼續。
 - **主要在 Windows 上測過。** macOS 和 Linux 應該可以用，但測得比較少，有問題歡迎開 issue。
 - **不做真人。** 它做的是動畫，不會生成真實人物的實拍畫面。
