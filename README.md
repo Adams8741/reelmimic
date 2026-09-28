@@ -4,7 +4,7 @@
 
 # ReelMimic
 
-**丟一支喜歡的影片，AI 導演團隊幫你做出同樣風格的新動畫。**
+**丟一支你喜歡的影片，做一支一樣風格的動畫。**
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-7A6BFF)](LICENSE)
 [![Claude Code](https://img.shields.io/badge/Claude_Code-supported-E86BD2)](https://docs.anthropic.com/en/docs/claude-code)
@@ -23,10 +23,13 @@
 
 ## 這是什麼
 
-給它一支參考影片（檔案、手機螢幕錄影或 YouTube 連結）和一句需求，ReelMimic 會拆解那支片的剪法、節奏、運鏡與畫面語言，
-和你一起把企劃定下來，**你核准之後**才開始製作，並由一組 AI agent 分工完成、逐鏡審查，最後交出同風格的全新 2D 動畫。
+看到一支很喜歡的動畫短片，想做一支同樣感覺、但內容是自己的？
+把影片丟進來（檔案、手機錄影、YouTube 連結都可以），再說一句你想做什麼就好。
 
-參考片只學手法，不複製它的畫面、角色或素材。全部在你自己的電腦上跑，用你自己的 Claude Code 或 Codex 帳號。
+ReelMimic 會先看懂那支片怎麼剪、節奏多快、鏡頭怎麼動，然後寫一份企劃給你看。你覺得 OK 才開始做。
+做的時候是好幾個 AI 分工，每一鏡做完都會換另一個 AI 來挑毛病，改到過關才往下走。
+
+它只學別人的手法，不會拿別人的畫面或角色來用。整套都在你自己的電腦上跑，用的是你自己的 Claude Code 或 Codex 帳號。
 
 <p align="center">
 <picture>
@@ -35,68 +38,66 @@
 </picture>
 </p>
 
-## 特色
+## 可以做到什麼
 
-| 功能 | 說明 |
-|---|---|
-| **風格拆解** | 自動量測鏡頭數、平均鏡長、BPM、轉場、配色與運鏡，產出逐鏡風格報告 |
-| **先企劃再生成** | 分鏡逐鏡對照參考片、素材附授權、定調畫面；來回討論到你滿意才開始 |
-| **多 agent 生產線** | 最多 6 個製作 agent 平行，每做完一鏡就由全新的審查員看全解析度畫面，缺陷在哪產生就在哪修 |
-| **修正要有證據** | 問題分「必修／順手修」兩級，每個修正都附同一秒、同一位置的前後對照 |
-| **看得見 AI 在做什麼** | 即時顯示每個 agent 的思考與步驟、看過的影格、完整紀錄；對話可附圖片 |
-| **直接在影片上改** | 成片出來後，在任一時間點打修改意見，一次送出 |
-| **可擴充** | 一種風格一個 Markdown 檔；製作引擎就是一般的 agent skill，加新風格不用寫程式 |
-| **三種介面語言** | 繁體中文、English、简体中文，右上角切換；AI 導演用你選的語言回報 |
+- **拆解參考片**：幾個鏡頭、每鏡多長、BPM、轉場、配色、運鏡，都會幫你量出來。
+- **先給你看企劃**：分鏡、角色、素材、定調畫面都在裡面。想改就在旁邊聊，改到滿意再按核准。
+- **一群 AI 一起做**：最多 6 個同時做不同段落。每做完一鏡就換一個新的 AI 來審，不會自己審自己。
+- **說修好要拿圖來看**：每個修正都附修改前後的截圖，審查的人對過才算數。
+- **看得到它在幹嘛**：每個 AI 正在想什麼、跑了什麼、看了哪幾格，畫面上都有，也能打開完整 log。
+- **直接在影片上留言**：成片出來後，拉到哪一秒就在那一秒打字，寫完一起送出。
+- **加新風格不用寫程式**：一種風格就是一個 Markdown 檔。
+- **三種語言**：繁中、英文、簡中，右上角切換。
 
-目前支援 2D 動畫：向量 Q 版、手繪水彩、動態圖像等。30 秒短片從核准企劃到成片約 1–2 小時，依畫風而定。
+現在做的是 2D 動畫，像 Q 版向量、手繪水彩、動態圖像這類。30 秒的片子，核准企劃後大概一到兩小時做完，看畫風而定。
 
-## 快速開始
+## 開始用
 
-**需要**：Node.js 20+、Python 3.10+、FFmpeg、Chrome，以及 [Claude Code](https://docs.anthropic.com/en/docs/claude-code) 或 [Codex CLI](https://github.com/openai/codex)（至少一個，已登入）。
+先裝好這些：Node.js 20 以上、Python 3.10 以上、FFmpeg、Chrome，還有 [Claude Code](https://docs.anthropic.com/en/docs/claude-code) 或 [Codex CLI](https://github.com/openai/codex) 其中一個（要先登入）。
 
 ```bash
 git clone https://github.com/edenfunf/reelmimic.git && cd reelmimic
-./install.sh      # Windows：雙擊 install.bat
-./start.sh        # Windows：雙擊 start.bat
+./install.sh      # Windows 直接點兩下 install.bat
+./start.sh        # Windows 直接點兩下 start.bat
 ```
 
-打開 <http://localhost:4318>。安裝腳本會裝好 Python 與網站套件、編譯前端，並檢查環境（之後可隨時 `cd app && npm run doctor`）。
-repo 裡的 `.claude/skills/` 會被 Claude Code 自動載入，Codex 則讀 `AGENTS.md`，不需要其他設定。
+打開 <http://localhost:4318> 就能用了。安裝腳本會順便檢查環境，少了什麼會跟你說；之後想再檢查一次，跑 `cd app && npm run doctor`。
+Claude Code 會自己讀到 repo 裡的 skills，Codex 會讀 `AGENTS.md`，不用另外設定。
 
 ### 做第一支影片
 
-1. 首頁拖入參考影片或貼連結，寫下想做什麼，選 Claude Code 或 Codex。
-2. 等 AI 拆解並寫好企劃，在右側對話框提意見（可以附截圖）。
-3. 提供或略過企劃列出的素材（例如歌詞），按「核准並開始生成」。
-4. 在「生產線」分頁看每個角色、每一段的進度與審查截圖。
-5. 成片出來後，直接在影片下方針對某一秒留言修改。
+1. 在首頁丟參考影片或貼連結，寫你想做什麼，選要用 Claude Code 還是 Codex。
+2. 等它拆解完、寫好企劃。有意見就在右邊聊天框講，也可以貼截圖。
+3. 企劃裡如果有要你給的東西（像歌詞），給它或跳過，然後按「核准並開始生成」。
+4. 「生產線」分頁可以看到每個角色、每一段做到哪、審查截圖長怎樣。
+5. 做好之後覺得哪裡不對，就直接在那一秒留言。
 
 ## 設定
 
-API 金鑰與本機路徑放在 `~/.reelmimic/secrets.json`（在 repo 外，不會被 commit），範本見 [`secrets.example.json`](secrets.example.json)。
+金鑰跟一些路徑放在 `~/.reelmimic/secrets.json`。這個檔在 repo 外面，不會被 commit，格式可以照 [`secrets.example.json`](secrets.example.json)。
 
-| 鍵 | 用途 |
+| 鍵 | 用來做什麼 |
 |---|---|
-| `YATING_KEY` | 雅婷台灣華語語音（旁白） |
-| `PIXABAY_KEY`、`FREESOUND_KEY` | 更多授權安全的圖片、音樂、音效（沒有也能用 Openverse） |
-| `FFMPEG_DIR`、`CHROME_PATH`、`CODEX_BIN`、`PYTHON` | 工具不在 PATH 上時指定位置 |
-| `BUILDERS`、`MAX_AGENTS` | 每支片平行的製作 agent 數（預設 6）、全部專案同時的 agent 上限（預設 12） |
-| `PORT` | 網站埠號（預設 4318） |
+| `YATING_KEY` | 雅婷的台灣華語語音，拿來配旁白 |
+| `PIXABAY_KEY`、`FREESOUND_KEY` | 可以找到更多能合法使用的圖片、音樂、音效（沒有也行，會用 Openverse） |
+| `FFMPEG_DIR`、`CHROME_PATH`、`CODEX_BIN`、`PYTHON` | 這些工具不在 PATH 上的話，在這裡指定位置 |
+| `BUILDERS`、`MAX_AGENTS` | 一支片同時幾個 AI 在做（預設 6）、所有專案加起來最多幾個（預設 12） |
+| `PORT` | 網站用的埠號（預設 4318） |
 
 ## 文件
 
-- [架構](docs/ARCHITECTURE.md)：流程、生產線、檔案合約、agent 轉接層
-- [擴充指南](docs/EXTENDING.md)：新增風格、製作引擎、AI 導演，調整流程
-- [貢獻方式](CONTRIBUTING.md)
+- [架構](docs/ARCHITECTURE.md)：整個流程怎麼跑、檔案怎麼放、怎麼接 AI
+- [擴充](docs/EXTENDING.md)：怎麼加風格、加製作引擎、接別的 AI
+- [參與開發](CONTRIBUTING.md)
 
-## 內容原則
+## 使用原則
 
-- 參考片只學手法（節奏、構圖、轉場、笑點設計），不複製畫面、角色、Logo 或素材。
-- 角色預設原創；你提供自家角色的設計圖時照著做。
-- 外部素材記錄來源、作者與授權（`assets/ASSETS.md`），授權不明的會標示。
-- 歌詞只用你提供的文字，不自動下載商業歌曲。
-- 生成的影片如何使用由你負責確認。
+- 參考片只學手法，像節奏、構圖、轉場、笑點怎麼安排；畫面、角色、Logo、素材都不會拿來用。
+- 角色預設是原創的。你有自己的角色設計圖，就照你的做。
+- 網路上找來的素材會記下來源、作者跟授權，授權不清楚的會特別標出來。
+- 歌詞只用你給的文字，不會自己去下載商業歌曲。
+- 做出來的影片要怎麼用，請自己確認有沒有權利。
 
 ## 授權
 
-程式碼以 [MIT License](LICENSE) 釋出。內含的第三方 skill 與素材保有各自的授權，見 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
+程式碼用 [MIT](LICENSE) 授權。裡面附的第三方 skill 和素材照它們原本的授權，細節在 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
