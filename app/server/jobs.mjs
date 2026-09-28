@@ -44,6 +44,8 @@ const running = new Map();   // id → Set<AbortController>
 const now = () => new Date().toISOString();
 export const dirOf = (id) => join(PROJECTS, id);
 const jpath = (id) => join(dirOf(id), 'job.json');
+// System messages in the project's language (Simplified Chinese is converted from the Chinese text by the UI).
+const L = (id, zh, en) => (load(id).lang === 'en' ? en : zh);
 export function load(id) { return JSON.parse(readFileSync(jpath(id), 'utf8')); }
 function save(job) { job.updatedAt = now(); writeFileSync(jpath(job.id), JSON.stringify(job, null, 1)); bus.emit('job', job.id, { type: 'job', job }); return job; }
 function update(id, fn) { const j = load(id); fn(j); return save(j); }
@@ -61,7 +63,7 @@ export function recoverOrphans() {
     if (!existsSync(jpath(d))) continue;
     const j = load(d);
     if (!WORK.includes(j.stage)) continue;
-    update(d, (x) => { x.failed = x.stage; x.stage = 'error'; x.error = '伺服器重新啟動，這一輪被中斷了（它可能已經改了部分檔案）。按「重試這一步」從目前的檔案繼續。'; x.chat.push({ role: 'system', text: '這一輪因為伺服器重新啟動而中斷。', ts: now() }); });
+    update(d, (x) => { x.failed = x.stage; x.stage = 'error'; x.error = L(d, '伺服器重新啟動，這一輪被中斷了（它可能已經改了部分檔案）。按「重試這一步」從目前的檔案繼續。', 'The server restarted and this turn was cut off (it may have changed some files). Click “Retry this step” to continue from the current files.'); x.chat.push({ role: 'system', text: L(d, '這一輪因為伺服器重新啟動而中斷。', 'This turn was cut off by a server restart.'), ts: now() }); });
   }
 }
 const readJSON = (p) => { try { return JSON.parse(readFileSync(p, 'utf8')); } catch { return null; } };
@@ -201,7 +203,7 @@ async function turn(id, phase, vars, must, { session = 'director', who } = {}) {
   return { ok: r.ok && !missing.length, text: r.text, missing, stderr: r.stderr };
 }
 function fail(id, stageName, res) {
-  setStage(id, 'error', { failed: stageName, error: res.aborted ? '已取消' : !res.missing?.length ? `agent 回合失敗 ${res.stderr ? '：' + res.stderr.slice(-300) : ''}` : `缺少輸出：${res.missing.join(', ')}` });
+  setStage(id, 'error', { failed: stageName, error: res.aborted ? L(id, '已取消', 'Cancelled') : !res.missing?.length ? L(id, `agent 回合失敗 ${res.stderr ? '：' + res.stderr.slice(-300) : ''}`, `The agent turn failed${res.stderr ? ': ' + res.stderr.slice(-300) : ''}`) : L(id, `缺少輸出：${res.missing.join(', ')}`, `Missing output: ${res.missing.join(', ')}`) });
   return false;
 }
 async function step(id, stageName, phase, vars, must, next, opts) {
@@ -217,7 +219,7 @@ function collectNeeds(id, items, from) {
   const add = (items || []).filter(Boolean).map((n) => ({ ...n, from, at: now() }));
   if (!add.length) return 0;
   update(id, (j) => { j.needs = [...(j.needs || []).filter((x) => !add.some((a) => a.issue === x.issue)), ...add]; });
-  chat(id, 'system', `需要你提供：${add.map((n) => n.issue).join('；')}`);
+  chat(id, 'system', L(id, `需要你提供：${add.map((n) => n.issue).join('；')}`, `Needs your input: ${add.map((n) => n.issue).join('; ')}`));
   return add.length;
 }
 
@@ -240,7 +242,8 @@ async function preProduction(id) {
     ...chars.map((c) => turn(id, 'pre_cast', { character: c }, [c.file], { session: `cast-${c.id}`, who: `cast-${c.id}` }).then((r) => ({ what: `角色 ${c.name || c.id}`, ok: r.ok }))),
     ...(needAssets ? [turn(id, 'pre_assets', {}, ['assets/fetched.json'], { session: 'fresh', who: 'assets' }).then((r) => ({ what: '素材', ok: r.ok }))] : []),
   ];
-  if (work.length) chat(id, 'system', `企劃核心完成，${chars.length ? `${chars.length} 個角色` : ''}${chars.length && needAssets ? '和' : ''}${needAssets ? '素材' : ''}同時製作中`);
+  if (work.length) chat(id, 'system', L(id, `企劃核心完成，${chars.length ? `${chars.length} 個角色` : ''}${chars.length && needAssets ? '和' : ''}${needAssets ? '素材' : ''}同時製作中`,
+    `Plan core done. Now drafting ${[chars.length ? `${chars.length} character${chars.length > 1 ? 's' : ''}` : '', needAssets ? 'the assets' : ''].filter(Boolean).join(' and ')} in parallel`));
   const results = await Promise.all(work);   // a failed helper is not fatal: the director finishes that part next
   if (!(await step(id, 'planning', 'plan_frames', { results }, ['plan.json'], 'plan_review'))) return false;
   return flushNotes(id);
@@ -251,7 +254,7 @@ async function flushNotes(id) {
   const notes = load(id).pendingNotes || [];
   if (!notes.length) return true;
   update(id, (x) => { x.pendingNotes = []; });
-  chat(id, 'system', '把企劃寫作期間你補充的意見修進企劃');
+  chat(id, 'system', L(id, '把企劃寫作期間你補充的意見修進企劃', 'Adding the notes you sent while the plan was being written'));
   if (!(await step(id, 'replanning', 'replan', { message: notes.join('\n\n') }, ['plan.json'], 'plan_review'))) return false;
   return flushNotes(id);
 }
@@ -315,7 +318,7 @@ export async function approve(id) {
   const open = openInputs(id);
   if (open.length) { const e = new Error('還有需要你提供或略過的素材：' + open.map((r) => r.label || r.id).join('、')); e.code = 409; throw e; }
   update(id, (j) => { j.approvedAt = now(); j.approvedPlanVersion = readJSON(join(dirOf(id), 'plan.json'))?.version; j.engineSnapshot = snapshotEngine(id); j.pipeline = {}; j.sessions = j.approvedAtPrev ? {} : Object.fromEntries(Object.entries(j.sessions || {}).filter(([k]) => k.startsWith('cast-'))); j.approvedAtPrev = true; j.needs = []; j.userNote = null; });
-  chat(id, 'system', `企劃已核准，開始生產：角色關 → 分段製作（每段做完立刻審）→ 組裝 → 最後評審`);
+  chat(id, 'system', L(id, `企劃已核准，開始生產：角色關 → 分段製作（每段做完立刻審）→ 組裝 → 最後評審`, 'Plan approved. Production: characters → parts built and reviewed as they finish → assembly → final review'));
   if (await production(id, { fresh: true })) await finalPanel(id);
 }
 
@@ -417,7 +420,7 @@ async function production(id, { fresh = false } = {}) {
   const j = load(id);
   if ((j.needs || []).length) return pause(id);
   const failed = Object.entries(j.pipeline.chunks || {}).filter(([, v]) => v.state !== 'passed');
-  if (failed.length) { chat(id, 'system', `有 ${failed.length} 段沒通過鏡頭審查：${failed.map(([k, v]) => `${k}(${v.state})`).join('、')}，請你看這幾段決定`); setStage(id, 'needs_input'); return false; }
+  if (failed.length) { chat(id, 'system', L(id, `有 ${failed.length} 段沒通過鏡頭審查：${failed.map(([k, v]) => `${k}(${v.state})`).join('、')}，請你看這幾段決定`, `${failed.length} part${failed.length > 1 ? 's' : ''} didn't pass shot review: ${failed.map(([k, v]) => `${k} (${v.state})`).join(', ')}. Please take a look and decide`)); setStage(id, 'needs_input'); return false; }
   // 4) assemble
   pipe(id, (p) => { p.phase = 'assemble'; });
   return step(id, 'producing', 'assemble', {}, ['out/video.mp4'], 'done');
@@ -435,7 +438,7 @@ async function castGate(id, prev) {
   const setC = (cid, v) => pipe(id, (p) => { p.cast.chars = p.cast.chars || {}; p.cast.chars[cid] = { ...(p.cast.chars[cid] || {}), ...v }; });
   const keep = prev.cast?.mode === 'parallel' ? prev.cast.chars || {} : {};   // resuming: characters that already passed stay passed
   pipe(id, (p) => { p.cast = { round: 0, pass: false, state: 'reviewing', mode: 'parallel', chars: Object.fromEntries(chars.map((c) => [c.id, keep[c.id]?.state === 'passed' ? keep[c.id] : { state: 'queued', round: 0 }])) }; });
-  chat(id, 'system', `角色關：${chars.length} 個角色各自由一組審查＋修正同時進行`);
+  chat(id, 'system', L(id, `角色關：${chars.length} 個角色各自由一組審查＋修正同時進行`, `Characters: reviewing and fixing ${chars.length} character${chars.length > 1 ? 's' : ''} in parallel`));
   const shared = [];
   const one = async (c) => {
     for (let round = 1; ; round++) {
@@ -464,14 +467,14 @@ async function castGate(id, prev) {
     res = await Promise.all(chars.map((c, i) => (res[i] === 'passed' || res[i] === 'shared' ? one(c) : res[i])));
     if (res.includes('needs')) return pause(id);
   }
-  if (res.some((x) => x !== 'passed')) { pipe(id, (p) => { p.cast.state = 'failed'; p.cast.round = CONFIG.castRounds; }); chat(id, 'system', `角色關：${chars.filter((c, i) => res[i] !== 'passed').map((c) => c.name || c.id).join('、')} 審了 ${CONFIG.castRounds} 輪還沒通過，請你看設定圖決定`); setStage(id, 'needs_input'); return false; }
+  if (res.some((x) => x !== 'passed')) { pipe(id, (p) => { p.cast.state = 'failed'; p.cast.round = CONFIG.castRounds; }); chat(id, 'system', L(id, `角色關：${chars.filter((c, i) => res[i] !== 'passed').map((c) => c.name || c.id).join('、')} 審了 ${CONFIG.castRounds} 輪還沒通過，請你看設定圖決定`, `Characters: ${chars.filter((c, i) => res[i] !== 'passed').map((c) => c.name || c.id).join(', ')} still not passing after ${CONFIG.castRounds} rounds. Please check the character sheets and decide`)); setStage(id, 'needs_input'); return false; }
   // every character passed on its own → one line-up check across them, then the serial gate handles anything it finds
   pipe(id, (p) => { p.cast.state = 'reviewing'; p.cast.lineup = true; });
   const r = await turn(id, 'cast_qa', { round: 'lineup', lineup: true }, ['out/check/cast/review.json'], { session: 'fresh', who: 'cast-qa' });
   if (!r.ok) return fail(id, 'producing', r);
   const rv = readJSON(join(d, 'out', 'check', 'cast', 'review.json')) || {};
   if (collectNeeds(id, rv.needs_user, 'cast-qa')) return pause(id);
-  if (passed(rv)) { pipe(id, (p) => { p.cast.pass = true; p.cast.state = 'passed'; }); chat(id, 'system', '角色關通過（每個角色各自通過＋並排檢查）'); return true; }
+  if (passed(rv)) { pipe(id, (p) => { p.cast.pass = true; p.cast.state = 'passed'; }); chat(id, 'system', L(id, '角色關通過（每個角色各自通過＋並排檢查）', 'Characters passed (each one on its own, then side by side)')); return true; }
   return castSerial(id, { cast: { pass: false } }, rv);
 }
 
@@ -488,8 +491,8 @@ async function castSerial(id, prev, firstReview) {
       rv = readJSON(join(d, 'out', 'check', 'cast', 'review.json')) || {};
     }
     if (collectNeeds(id, rv.needs_user, 'cast-qa')) return pause(id);
-    if (passed(rv)) { pipe(id, (p) => { p.cast.pass = true; p.cast.state = 'passed'; }); chat(id, 'system', `角色關通過（第 ${round} 輪）`); break; }
-    if (round >= CONFIG.castRounds) { pipe(id, (p) => { p.cast.state = 'failed'; }); chat(id, 'system', `角色關 ${round} 輪仍未通過，請你看角色設定圖決定`); setStage(id, 'needs_input'); return false; }
+    if (passed(rv)) { pipe(id, (p) => { p.cast.pass = true; p.cast.state = 'passed'; }); chat(id, 'system', L(id, `角色關通過（第 ${round} 輪）`, `Characters passed (round ${round})`)); break; }
+    if (round >= CONFIG.castRounds) { pipe(id, (p) => { p.cast.state = 'failed'; }); chat(id, 'system', L(id, `角色關 ${round} 輪仍未通過，請你看角色設定圖決定`, `Characters still not passing after ${round} rounds. Please check the character sheets and decide`)); setStage(id, 'needs_input'); return false; }
     pipe(id, (p) => { p.cast.state = 'fixing'; });
     const f = await turn(id, 'cast_fix', { issues: rv.issues || [], round }, ['out/check/cast/sheet.jpg', 'out/check/cast/fixes.json'], { who: 'director' });
     if (!f.ok) return fail(id, 'producing', f);
@@ -512,10 +515,10 @@ async function finalPanel(id) {
     const must = (c.must_fix || []).filter(Boolean);
     update(id, (j) => { j.critiqueRounds = round; j.lastCritique = { pass: !must.length, must: must.length, at: now() }; });
     const needs = collectNeeds(id, c.needs_user, 'critic');
-    if (!must.length) { chat(id, 'system', needs ? '評審：導演能修的都過了，剩下需要你提供的項目' : `評審通過（第 ${round} 輪）`); setStage(id, needs ? 'needs_input' : 'done'); return; }
-    if (round > CONFIG.finalRounds) { chat(id, 'system', `評審仍有 ${must.length} 項必修，已達自動修改上限，請你決定`); setStage(id, 'done'); return; }
+    if (!must.length) { chat(id, 'system', needs ? L(id, '評審：導演能修的都過了，剩下需要你提供的項目', 'Final review: everything the director can fix is done. What is left needs your input') : L(id, `評審通過（第 ${round} 輪）`, `Final review passed (round ${round})`)); setStage(id, needs ? 'needs_input' : 'done'); return; }
+    if (round > CONFIG.finalRounds) { chat(id, 'system', L(id, `評審仍有 ${must.length} 項必修，已達自動修改上限，請你決定`, `The final review still has ${must.length} must-fix item${must.length > 1 ? 's' : ''} and the automatic fix limit is reached. Please decide`)); setStage(id, 'done'); return; }
     const msg = must.map((m, i) => `${i + 1}. [${m.shot || '全片'}${m.time != null ? ' ' + m.time + 's' : ''}] ${m.issue}${m.fix ? ' → 建議：' + m.fix : ''}`).join('\n');
-    chat(id, 'system', `評審第 ${round} 輪：${must.length} 項必修，交回導演（每項要附修改前後對照）`);
+    chat(id, 'system', L(id, `評審第 ${round} 輪：${must.length} 項必修，交回導演（每項要附修改前後對照）`, `Final review round ${round}: ${must.length} must-fix item${must.length > 1 ? 's' : ''}, sent back to the director (each fix needs before/after proof)`));
     if (!(await step(id, 'revising', 'revise', { message: msg, round }, ['out/video.mp4', 'out/check/fixes.json']))) return;
   }
 }
