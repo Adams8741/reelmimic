@@ -42,12 +42,16 @@ const span = s => String(s).split(':').map(Number);
 // comma-separated fields, keeping commas inside parentheses ('PLK.MX(1.38),PLK.WL,500,300'); numbers stay numbers
 const fields = s => { const out = []; let d = 0, cur = ''; for (const ch of String(s)) { if (ch === ',' && !d) { out.push(cur); cur = ''; continue; } d += ch === '(' ? 1 : ch === ')' ? -1 : 0; cur += ch; } out.push(cur); return out.map(v => isNaN(+v) ? v : +v); };
 
+// JPEG frames decode as full-range (yuvj420p); without this the MP4 is flagged full-range and some players/platforms
+// show it washed out or with crushed shadows. Convert to standard (tv) range and say so.
+const TV_RANGE = ['-vf', 'scale=out_range=tv', '-pix_fmt', 'yuv420p', '-color_range', 'tv'];
+
 if (args.encode) {
   const out = args.out || 'out/video.mp4', n = readdirSync(FRAMES_DIR).filter(f => f.endsWith('.jpg')).length, audio = args.audio;
   console.log(`encoding ${n} frames → ${out}${audio ? ' with ' + audio : ''}`);
   await run('ffmpeg', ['-y', '-loglevel', 'error', '-stats', '-framerate', String(fps), '-i', `${FRAMES_DIR}/f%05d.jpg`,
     ...(audio ? ['-i', audio, '-map', '0:v', '-map', '1:a', '-c:a', 'aac', '-b:a', '192k', '-shortest'] : []),
-    '-c:v', 'libx264', '-preset', 'slow', '-crf', '17', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', out]);
+    '-c:v', 'libx264', '-preset', 'slow', '-crf', '17', ...TV_RANGE, '-movflags', '+faststart', out]);
   console.log('wrote ' + out);
   process.exit(0);
 }
@@ -141,7 +145,7 @@ if (args.sheet || args.strip) {
   const out = args.out || 'out/clip.mp4'; mkdirSync(dirname(out), { recursive: true });
   const ff = spawn('ffmpeg', ['-y', '-loglevel', 'error', '-f', 'image2pipe', '-framerate', String(fps), '-c:v', 'mjpeg', '-i', '-',
     ...(audio ? ['-ss', String(a), '-t', String(b - a), '-i', audio, '-map', '0:v', '-map', '1:a', '-c:a', 'aac', '-b:a', '192k', '-shortest'] : []),
-    '-c:v', 'libx264', '-preset', 'medium', '-crf', '18', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', out],
+    '-c:v', 'libx264', '-preset', 'medium', '-crf', '18', ...TV_RANGE, '-movflags', '+faststart', out],
     { stdio: ['pipe', 'inherit', 'inherit'] });
   const n = Math.round((b - a) * fps), start = Date.now();
   for (let i = 0; i < n; i++) {
