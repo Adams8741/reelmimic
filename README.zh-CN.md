@@ -14,10 +14,20 @@
 
 [English](README.md) · [繁體中文](README.zh-TW.md) · **简体中文**
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/home-zh-CN-dark.png">
-  <img src="docs/assets/home-zh-CN-light.png" alt="ReelMimic 首页" width="860">
-</picture>
+<table>
+  <tr>
+    <td align="center" width="33%"><img src="docs/assets/demo-picnic.gif" alt="第一次野餐"></td>
+    <td align="center" width="33%"><img src="docs/assets/demo-cat-bath.gif" alt="橘寶洗澡記"></td>
+    <td align="center" width="33%"><img src="docs/assets/demo-grandma-phone.gif" alt="阿嬤的手機教室"></td>
+  </tr>
+  <tr>
+    <td align="center"><b>第一次野餐</b><br><sub>手绘水彩 · 30 秒</sub></td>
+    <td align="center"><b>橘宝洗澡记</b><br><sub>旁白漫画 · 30 秒</sub></td>
+    <td align="center"><b>阿嬷的手机教室</b><br><sub>旁白漫画 · 30 秒</sub></td>
+  </tr>
+</table>
+
+<sub>都是用 ReelMimic 做的：各给一支参考视频加一句需求。角色和故事都是原创。</sub>
 
 </div>
 
@@ -37,6 +47,13 @@ ReelMimic 学的是参考片的做法，不是把原本的画面、角色或素�
 
 <p align="center">
 <picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/home-zh-CN-dark.png">
+  <img src="docs/assets/home-zh-CN-light.png" alt="ReelMimic 首页" width="860">
+</picture>
+</p>
+
+<p align="center">
+<picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/assets/flow-zh-CN-dark.png">
   <img src="docs/assets/flow-zh-CN-light.png" alt="ReelMimic 流程" width="860">
 </picture>
@@ -53,7 +70,19 @@ ReelMimic 学的是参考片的做法，不是把原本的画面、角色或素�
 - **加新风格不用写程序**：一种风格就是一个 Markdown 档。
 - **三种语言**：繁中、英文、简中，右上角切换。
 
-实际生成时间会跟视频长度、风格和复杂度有关。以 60 秒左右的短片来说，企划核准后通常需要一到两小时。
+## 先说清楚
+
+- **目前只做 2D，有两种画法：** 干净的矢量／动态图像（以 [HyperFrames](https://github.com/heygen-com/hyperframes) 为基础），以及手绘水彩（以 [painted-animation](https://github.com/tuzhechen2005/painted-animation) 为基础）。参考片对不到已知风格时，会用最接近的画法做，并写一份新风格的建议。
+- **需要一点时间。** 30–60 秒的视频，企划核准后通常要 1–3 小时，看长度和画风。手绘水彩最慢，因为每一格都是画出来的。
+- **用的是你的 AI 额度。** 所有工作都通过你的 Claude Code 或 Codex 账号跑，会算进那个账号的用量。额度用完时会暂停，之后可以从停下来的地方继续。
+- **主要在 Windows 上测过。** macOS 和 Linux 应该可以用，但测得比较少，有问题欢迎开 issue。
+- **不做真人。** 它做的是动画，不会生成真实人物的实拍画面。
+
+## 接下来
+
+- 更多画法（像素风、动漫风手绘角色）
+- 在网站上一键把新发现的风格存起来，下次遇到同类参考片就直接对到
+- 让手绘水彩渲染更快
 
 ## 开始用
 

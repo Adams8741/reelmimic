@@ -14,10 +14,20 @@
 
 **English** · [繁體中文](README.zh-TW.md) · [简体中文](README.zh-CN.md)
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/home-en-dark.png">
-  <img src="docs/assets/home-en-light.png" alt="ReelMimic home page" width="860">
-</picture>
+<table>
+  <tr>
+    <td align="center" width="33%"><img src="docs/assets/demo-picnic.gif" alt="First Picnic"></td>
+    <td align="center" width="33%"><img src="docs/assets/demo-cat-bath.gif" alt="Bath Time"></td>
+    <td align="center" width="33%"><img src="docs/assets/demo-grandma-phone.gif" alt="Grandma's Phone Class"></td>
+  </tr>
+  <tr>
+    <td align="center"><b>First Picnic</b><br><sub>hand-painted watercolor · 30 s</sub></td>
+    <td align="center"><b>Bath Time</b><br><sub>narrated comic · 30 s</sub></td>
+    <td align="center"><b>Grandma's Phone Class</b><br><sub>narrated comic · 30 s</sub></td>
+  </tr>
+</table>
+
+<sub>Made with ReelMimic, each from a reference video and a one-line brief. Characters and stories are original; captions are in Traditional Chinese.</sub>
 
 </div>
 
@@ -41,6 +51,13 @@ The whole thing runs on your own computer, with your own Claude Code or Codex.
 
 <p align="center">
 <picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/home-en-dark.png">
+  <img src="docs/assets/home-en-light.png" alt="ReelMimic home page" width="860">
+</picture>
+</p>
+
+<p align="center">
+<picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/assets/flow-en-dark.png">
   <img src="docs/assets/flow-en-light.png" alt="How ReelMimic works" width="860">
 </picture>
@@ -57,8 +74,24 @@ The whole thing runs on your own computer, with your own Claude Code or Codex.
 - **New styles are just Markdown.** One file per style, no code.
 - **Three languages.** 繁體中文, English and 简体中文, switch in the top right.
 
-How long it takes depends on the video's length, style and complexity. For a short video of around 60 seconds, it
-usually takes one to two hours after you approve the plan.
+## Good to know
+
+- **2D only, two drawing engines so far:** clean vector / motion graphics (built on
+  [HyperFrames](https://github.com/heygen-com/hyperframes)) and hand-painted watercolor (built on
+  [painted-animation](https://github.com/tuzhechen2005/painted-animation)). When a reference doesn't match a known
+  style, it uses the closest engine and writes up a proposal for a new style.
+- **It takes a while.** A 30–60 second video usually takes 1–3 hours after you approve the plan, depending on the
+  length and the look. Watercolor is the slowest, because every frame is painted.
+- **It uses your AI plan.** All the work runs through your Claude Code or Codex account, so it counts toward that
+  account's usage. If you hit a limit, the job pauses and can pick up where it stopped.
+- **Tested mostly on Windows.** macOS and Linux should work, but they've had less testing. Issues are welcome.
+- **No real people.** It makes animation, not live-action footage of real people.
+
+## Roadmap
+
+- More drawing engines (pixel art, anime-style hand-drawn characters)
+- Save a newly discovered style from the web app, so the next similar reference matches it directly
+- Faster watercolor rendering
 
 ## Getting started
 
