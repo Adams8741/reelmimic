@@ -206,9 +206,15 @@ async function turn(id, phase, vars, must, { session = 'director', who } = {}) {
   if (missing.length && r.ok && load(id).retryPending) missing = missing.filter((f) => !existsSync(join(d, f)));
   if (load(id).retryPending) update(id, (x) => { delete x.retryPending; });
   if (r.text) chat(id, session === 'fresh' ? 'critic' : session === 'director' ? 'agent' : 'builder', r.text, { phase, who: label });
-  return { ok: r.ok && !missing.length, text: r.text, missing, stderr: r.stderr };
+  return { ok: r.ok && !missing.length, text: r.text, missing, stderr: r.stderr, lastError: r.lastError };
 }
 function fail(id, stageName, res) {
+  // an account limit is the real cause, even when it also left outputs missing: say so plainly
+  const limit = [res.lastError, res.text, res.stderr].find((t) => t && /usage limit|rate limit|hit your limit|limit reached|quota|credit balance/i.test(t));
+  if (limit && !res.aborted) {
+    setStage(id, 'error', { failed: stageName, error: L(id, `AI 帳號的用量到上限了，等額度恢復或換另一個 AI 導演再按「重試這一步」。原始訊息：${limit.slice(-300)}`, `Your AI account hit its usage limit. Wait until it resets (or switch to the other AI director), then click “Retry this step”. Message: ${limit.slice(-300)}`) });
+    return false;
+  }
   setStage(id, 'error', { failed: stageName, error: res.aborted ? L(id, '已取消', 'Cancelled') : !res.missing?.length ? L(id, `agent 回合失敗 ${res.stderr ? '：' + res.stderr.slice(-300) : ''}`, `The agent turn failed${res.stderr ? ': ' + res.stderr.slice(-300) : ''}`) : L(id, `缺少輸出：${res.missing.join(', ')}`, `Missing output: ${res.missing.join(', ')}`) });
   return false;
 }

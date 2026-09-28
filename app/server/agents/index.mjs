@@ -78,7 +78,8 @@ function parseCodex(obj, emit, st) {
 
 export function runAgent({ kind, cwd, prompt, sessionId, onEvent = () => {}, signal }) {
   return new Promise((resolve) => {
-    const st = { sessionId, text: '', ok: false, cost: null };
+    const st = { sessionId, text: '', ok: false, cost: null, lastError: '' };
+    const emit = (e) => { if (e.type === 'error') st.lastError = e.text; onEvent(e); };   // keep the last error for the job's error card
     const isClaude = kind === 'claude';
     const cmd = isClaude ? 'claude' : CODEX_BIN;
     const args = isClaude ? claudeArgs(sessionId) : codexArgs(sessionId, cwd);
@@ -87,16 +88,16 @@ export function runAgent({ kind, cwd, prompt, sessionId, onEvent = () => {}, sig
     if (signal) signal.addEventListener('abort', () => { try { IS_WIN ? spawnSync('taskkill', ['/pid', String(child.pid), '/T', '/F']) : child.kill('SIGTERM'); } catch {} });
     lines(child.stdout, (l) => {
       let obj; try { obj = JSON.parse(l); } catch { return; }
-      (isClaude ? parseClaude : parseCodex)(obj, onEvent, st);
+      (isClaude ? parseClaude : parseCodex)(obj, emit, st);
     });
     let err = '';
-    lines(child.stderr, (l) => { err += l + '\n'; if (!/^\s*$/.test(l) && !/DeprecationWarning|ExperimentalWarning/.test(l)) onEvent({ type: 'error', text: short(l, 400) }); });
-    child.on('error', (e) => { onEvent({ type: 'error', text: `${cmd} failed to start: ${e.message}` }); });
+    lines(child.stderr, (l) => { err += l + '\n'; if (!/^\s*$/.test(l) && !/DeprecationWarning|ExperimentalWarning/.test(l)) emit({ type: 'error', text: short(l, 400) }); });
+    child.on('error', (e) => { emit({ type: 'error', text: `${cmd} failed to start: ${e.message}` }); });
     child.on('close', (code) => {
       if (code !== 0) st.ok = false;
       else if (!isClaude && st.ok === false && !err) st.ok = true;
       onEvent({ type: 'done', ok: st.ok, text: st.text, cost: st.cost });
-      resolve({ sessionId: st.sessionId, text: st.text, ok: st.ok, code, stderr: err.slice(-2000) });
+      resolve({ sessionId: st.sessionId, text: st.text, ok: st.ok, code, stderr: err.slice(-2000), lastError: st.lastError });
     });
     child.stdin.end(prompt, 'utf8');
   });
