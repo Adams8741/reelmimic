@@ -1,4 +1,5 @@
 // Checks everything ReelMimic needs and says how to fix what's missing.   npm run doctor
+import '../server/env.mjs';   // same secrets and Python choice as the server
 import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import { homedir, platform } from 'node:os';

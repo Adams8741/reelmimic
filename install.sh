@@ -2,7 +2,14 @@
 # ReelMimic — one-time setup: Python packages, web app, UI build, environment check.
 set -e
 cd "$(dirname "$0")"
-PY="${PYTHON:-python3}"; command -v "$PY" >/dev/null || PY=python
+# first command that really runs Python 3.10+ (Windows may have a Store stub named python3)
+PY="${PYTHON:-}"
+if [ -z "$PY" ]; then
+  for c in python3 python py; do
+    if "$c" -c 'import sys; sys.exit(0 if sys.version_info >= (3, 10) else 1)' >/dev/null 2>&1; then PY="$c"; break; fi
+  done
+fi
+[ -n "$PY" ] || { echo "Python 3.10+ not found. Install it, or set PYTHON=/path/to/python"; exit 1; }
 echo "== Python packages ($PY)"; "$PY" -m pip install -r requirements.txt
 echo "== Web app"; cd app && npm install && npm run build
 echo "== Environment check"; node scripts/doctor.mjs || true

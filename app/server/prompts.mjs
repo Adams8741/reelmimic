@@ -26,7 +26,8 @@ const LANG_NAME = { 'zh-TW': '繁體中文', en: 'English', 'zh-CN': '简体中�
 const HEADER = (p, role = '導演') => `你是「風格克隆影片工作室」的${role} agent，工作目錄是 repo 根目錄。
 本專案資料夾：${p.dir}（以下路徑都相對於它，除非寫明 repo 根目錄）
 先讀：${SKILL}/SKILL.md（流程與規則）與 ${SKILL}/CONTRACT.md（檔案格式，必須照寫）。
-這一輪只做下面指定的步驟，做完就停，最後用 3–6 行${LANG_NAME[p.lang] || '繁體中文'}回報重點（不要貼整份檔案）。${p.lang && p.lang !== 'zh-TW' ? `
+${process.env.PYTHON && process.env.PYTHON !== 'python' ? `這台電腦的 Python 指令是 \`${process.env.PYTHON}\`：下面（和 skill 文件）寫 python 的地方都用它執行。
+` : ''}這一輪只做下面指定的步驟，做完就停，最後用 3–6 行${LANG_NAME[p.lang] || '繁體中文'}回報重點（不要貼整份檔案）。${p.lang && p.lang !== 'zh-TW' ? `
 使用者的介面語言是 ${LANG_NAME[p.lang]}：回報與企劃裡給人看的文字（plan.json、STORYBOARD.md）都用${LANG_NAME[p.lang]}寫；影片裡的字幕與旁白語言照使用者的需求。` : ''}
 ${RULES}
 ${SPEED}`;
