@@ -64,7 +64,8 @@ if chunks:
     print('\nper segment (build / review / fix minutes, rounds):')
     for c in sorted(chunks, key=lambda x: int(x[1:])):
         L = chunks[c]; f = lambda p: sum(m for ph, m in L if ph == p)
-        print(f"  {c}: build {f('build_chunk'):.0f}, review {f('shot_qa'):.0f} ×{sum(1 for ph, _ in L if ph == 'shot_qa')}, fix {f('fix_chunk'):.0f} ×{sum(1 for ph, _ in L if ph == 'fix_chunk')}  → {sum(m for _, m in L):.0f} min")
+        rounds = (j.get('pipeline') or {}).get('chunks', {}).get(c, {}).get('round')
+        print(f"  {c}: build {f('build_chunk'):.0f}, review {f('shot_qa'):.0f} ({sum(1 for ph, _ in L if ph == 'shot_qa')} shot reviews), fix {f('fix_chunk'):.0f} ({sum(1 for ph, _ in L if ph == 'fix_chunk')} fix turns), rounds {rounds or '?'}  → {sum(m for _, m in L):.0f} min")
 
 # what agents spend time on (gap to their next event)
 cat = collections.Counter(); byw = collections.defaultdict(list)

@@ -604,3 +604,9 @@ h1, h2, h3 { font-family: var(--font-display); margin: 0; letter-spacing: -.022e
 .lang-menu button { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 9px 12px; border-radius: 9px; font-size: 14px; color: var(--label); text-align: left; }
 .lang-menu button:hover { background: var(--fill-2); }
 .lang-menu button.on { color: var(--accent-ink); font-weight: 600; }
+
+/* shown when the site was rebuilt while this tab stayed open */
+.update-pill { position: fixed; left: 50%; bottom: calc(22px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 100;
+  border: 0; border-radius: 999px; padding: 10px 18px; font: inherit; font-size: 13.5px; font-weight: 600; cursor: pointer;
+  background: var(--accent); color: #fff; box-shadow: var(--shadow-3); animation: fade .3s var(--ease) both; }
+.update-pill:hover { background: color-mix(in srgb, var(--accent) 88%, #000); }
