@@ -28,16 +28,12 @@
 
 参考片只学手法，不拷贝它的画面、角色或素材。全部在你自己的电脑上跑，用你自己的 Claude Code 或 Codex 账号。
 
-```mermaid
-flowchart LR
-  A[参考视频 + 一句需求] --> B[风格拆解]
-  B --> C[前制企划]
-  C -->|你核准| D[多 agent 平行制作]
-  D --> E[每个角色、每一镜即时审查]
-  E --> F[最后评审]
-  F --> G[成片]
-  G -.->|在视频时间点留言| D
-```
+<p align="center">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/flow-zh-CN-dark.png">
+  <img src="docs/assets/flow-zh-CN-light.png" alt="ReelMimic 流程" width="860">
+</picture>
+</p>
 
 ## 特色
 

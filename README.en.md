@@ -31,16 +31,12 @@ animation in the same style.
 It learns technique from the reference — never its footage, characters or assets. Everything runs on your own machine
 with your own Claude Code or Codex account.
 
-```mermaid
-flowchart LR
-  A[Reference video + one sentence] --> B[Style breakdown]
-  B --> C[Pre-production plan]
-  C -->|you approve| D[Parallel multi-agent build]
-  D --> E[Every character and shot reviewed as it's made]
-  E --> F[Final critic]
-  F --> G[Finished video]
-  G -.->|notes at any moment| D
-```
+<p align="center">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/flow-en-dark.png">
+  <img src="docs/assets/flow-en-light.png" alt="How ReelMimic works" width="860">
+</picture>
+</p>
 
 ## Features
 
