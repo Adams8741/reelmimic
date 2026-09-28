@@ -198,7 +198,11 @@ async function turn(id, phase, vars, must, { session = 'director', who } = {}) {
   } finally { release(); running.get(id)?.delete(ac); }
   log(id, { type: 'turn', state: 'end', phase, who: label, ok: !!r?.ok && !ac.signal.aborted });
   if (ac.signal.aborted) return { ok: false, aborted: true };
-  const missing = must.filter((f, i) => !(mtime(join(d, f)) > before[i]));
+  let missing = must.filter((f, i) => !(mtime(join(d, f)) > before[i]));
+  // first turn after "retry": the interrupted turn may already have written everything, and the agent rightly
+  // changes nothing. Existing outputs count then, so the user isn't stuck retrying a finished step.
+  if (missing.length && r.ok && load(id).retryPending) missing = missing.filter((f) => !existsSync(join(d, f)));
+  if (load(id).retryPending) update(id, (x) => { delete x.retryPending; });
   if (r.text) chat(id, session === 'fresh' ? 'critic' : session === 'director' ? 'agent' : 'builder', r.text, { phase, who: label });
   return { ok: r.ok && !missing.length, text: r.text, missing, stderr: r.stderr };
 }
@@ -525,6 +529,7 @@ async function finalPanel(id) {
 
 export async function retry(id) {
   const j = load(id), f = j.failed;
+  update(id, (x) => { x.retryPending = true; });
   if (f === 'analyzing') return start(id);
   if (f === 'styling') { if (await step(id, 'styling', 'style', {}, ['analysis/STYLE.md', 'analysis/route.json'], 'styled')) await preProduction(id); return; }
   if (f === 'planning') return preProduction(id);
