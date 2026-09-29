@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { api } from './api.js';
-import { I, BrandMark, Orb, Seg, AutoText, ago } from './ui.jsx';
+import { I, BrandMark, Orb, Seg, AutoText, ago, RoundsEditor } from './ui.jsx';
 import { Project, Status } from './Project.jsx';
 import { LANGS, lang as initialLang, setLang } from './i18n.js';
 
@@ -88,6 +88,9 @@ function Composer({ agents }) {
   const [file, setFile] = useState(null), [url, setUrl] = useState(''), [linkMode, setLinkMode] = useState(false);
   const [brief, setBrief] = useState(''), [agent, setAgent] = useState('claude'), [inputs, setInputs] = useState([]);
   const [drag, setDrag] = useState(false), [busy, setBusy] = useState(false), [err, setErr] = useState('');
+  const [rounds, setRounds] = useState({}), [roundsOpen, setRoundsOpen] = useState(false), [defaults, setDefaults] = useState(null);
+  useEffect(() => { api.config().then((c) => setDefaults({ castRounds: c.castRounds, chunkRounds: c.chunkRounds, finalRounds: c.finalRounds })).catch(() => {}); }, []);
+  const customRounds = Object.entries(rounds).filter(([, v]) => v != null);
   const pick = useRef(), assets = useRef();
   const preview = useMemo(() => (file ? URL.createObjectURL(file) : null), [file]);
   useEffect(() => () => preview && URL.revokeObjectURL(preview), [preview]);
@@ -101,6 +104,7 @@ function Composer({ agents }) {
     if (file) f.append('reference', file); else f.append('url', url.trim());
     f.append('brief', brief); f.append('agent', agent); f.append('lang', document.documentElement.lang || 'zh-TW');
     inputs.forEach((x) => f.append('inputs', x));
+    customRounds.forEach(([k, v]) => f.append(k, String(v)));
     try { const { id } = await api.create(f); location.hash = `#/p/${id}`; } catch (e) { setErr(e.message); setBusy(false); }
   };
   const yt = ytId(url);
@@ -135,6 +139,8 @@ function Composer({ agents }) {
           <button className={`tool-chip ${inputs.length ? 'on' : ''}`} onClick={() => assets.current.click()} title="配樂、歌詞、圖片、Logo、自家角色設計圖">
             <I n="clip" />素材{inputs.length > 0 && <span className="n">{inputs.length}</span>}</button>
           <input ref={assets} type="file" multiple hidden onChange={(e) => setInputs([...e.target.files])} />
+          {defaults && <button className={`tool-chip ${customRounds.length ? 'on' : ''}`} onClick={() => setRoundsOpen(!roundsOpen)} aria-expanded={roundsOpen} title="每一關最多審查、修改幾輪">
+            <I n="sliders" />審查輪數{customRounds.length > 0 && <span className="n">{customRounds.length}</span>}</button>}
           <span className="grow" />
           <Seg value={agent} onChange={setAgent} options={[
             { value: 'claude', label: <><span className="long">Claude Code</span><span className="short">Claude</span></>, disabled: agents && !agents.claude, title: agents?.claude || '未偵測到' },
@@ -142,6 +148,7 @@ function Composer({ agents }) {
           <button className="send" disabled={!ok} onClick={submit} aria-label="開始">{busy ? <span className="spin-ring" /> : <I n="up" s={2.2} />}</button>
         </div>
         {inputs.length > 0 && <div className="small faint" style={{ padding: '8px 10px 2px' }}>素材：{inputs.map((f) => f.name).join('、')}</div>}
+        {roundsOpen && defaults && <div className="comp-rounds fade-in"><RoundsEditor value={rounds} defaults={defaults} onChange={setRounds} /></div>}
       </div>
       {err ? <div className="small" style={{ color: 'var(--red)', textAlign: 'center', marginTop: 12 }}>{err}</div>
         : <div className="small faint" style={{ textAlign: 'center', marginTop: 12 }}>先拆解與企劃，你核准前不會開始生成 · Ctrl+Enter 送出</div>}

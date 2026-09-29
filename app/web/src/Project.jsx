@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { api } from './api.js';
-import { I, Orb, Md, Ring, AutoText, useNow, clock, fmt } from './ui.jsx';
+import { I, Orb, Md, Ring, AutoText, useNow, clock, fmt, RoundsEditor } from './ui.jsx';
 import { Conversation, buildThread, STAGE_DO } from './Chat.jsx';
 
 export const STATUS = {
@@ -18,6 +18,7 @@ const STEPS = [
   { label: '成品', st: ['done', 'revising', 'critiquing'] },
 ];
 const stepIdx = (job) => { const s = job.stage === 'error' ? job.failed : job.stage; return Math.max(0, STEPS.findIndex((x) => x.st.includes(s))); };
+const PRE_PROD = ['planning', 'replanning', 'plan_review'];   // required inputs sit at the top of the page in these stages
 const PIPE_DO = { setup: '導演建置角色與共用素材', cast: '角色關：審查角色設定圖', shots: '分段製作，每段做完立刻審查', assemble: '組裝成片', final: '最後評審：接縫、連戲、節奏' };
 
 export function Project({ id }) {
@@ -37,6 +38,7 @@ export function Project({ id }) {
   const file = (p) => api.file(id, p, v);
   const onZoom = (src) => setZoom(src);
   const P = job.pipeline || {}, chunks = Object.values(P.chunks || {});
+  const preProd = PRE_PROD.includes(job.stage) || (job.stage === 'error' && PRE_PROD.includes(job.failed));
   const tabs = [
     s.video && { k: 'result', label: '成品', ico: 'play', badge: s.critique && !s.critique.pass ? [`${(s.critique.must_fix || []).length} 項必修`, 'warn'] : null },
     P.phase && { k: 'pipe', label: '生產線', ico: 'layers', badge: chunks.length ? [`${chunks.filter((c) => c.state === 'passed').length}/${chunks.length}`, ''] : null },
@@ -50,7 +52,7 @@ export function Project({ id }) {
       <a className="back" href="#/"><I n="back" s={2.2} />專案</a>
       <div className="p-head">
         <div className="grow"><h1>{s.plan?.title || job.title}</h1>{s.plan?.title && <div className="brief-line">{s.plan.logline || s.brief}</div>}</div>
-        <Status stage={job.stage} />
+        <div className="p-head-r">{s.rounds && <RoundsButton id={id} r={s.rounds} />}<Status stage={job.stage} /></div>
       </div>
       <div className="progress">
         {STEPS.map((x, i) => {
@@ -63,6 +65,7 @@ export function Project({ id }) {
           {working && <LiveBanner id={id} job={job} />}
           {job.stage === 'error' && <ErrorCard id={id} job={job} />}
           {(job.stage === 'needs_input' || ((job.needs || []).length > 0 && !working)) && <Needs id={id} s={s} file={file} onZoom={onZoom} />}
+          {preProd && (s.requiredInputs || []).length > 0 && <RequiredInputs id={id} s={s} editable top />}
           {tabs.length > 1 && <div className="tabs" role="tablist">{tabs.map((t) => <button key={t.k} role="tab" aria-selected={cur === t.k} className={cur === t.k ? 'on' : ''} onClick={() => setTab(t.k)}><I n={t.ico} />{t.label}{t.badge && <span className={`tb ${t.badge[1]}`}>{t.badge[0]}</span>}</button>)}</div>}
           <div key={cur} className="fade-in">
             {cur === 'result' && <Result s={s} file={file} />}
@@ -177,7 +180,8 @@ function Plan({ s, file, job, onTag, onZoom }) {
         {P.assets.length > 8 && <button className="btn sm plain" style={{ marginTop: 10, marginLeft: -10 }} onClick={() => setAllAssets(!allAssets)}>{allAssets ? '收起' : `顯示全部 ${P.assets.length} 項`}</button>}
         {s.assetsMd && <details style={{ marginTop: 12 }}><summary className="small muted" style={{ cursor: 'pointer' }}>授權紀錄</summary><div style={{ marginTop: 8 }}><Md src={s.assetsMd} /></div></details>}</section>}
 
-      {((s.requiredInputs || []).length > 0 || s.lyrics) && <RequiredInputs id={job.id} s={s} editable={review} />}
+      {!PRE_PROD.includes(job.stage) && ((s.requiredInputs || []).length > 0 || s.lyrics) && <RequiredInputs id={job.id} s={s} editable={false} />}
+      {PRE_PROD.includes(job.stage) && !(s.requiredInputs || []).length && s.lyrics && <RequiredInputs id={job.id} s={s} editable={review} />}
 
       {(P.open_questions || []).length > 0 && <section className="card"><div className="card-h"><h2>需要你決定</h2></div>
         <div className="list">{P.open_questions.map((q, i) => <div key={i} className="li"><div className="li-ico accent"><I n="bubble" /></div><div className="grow">{q}</div>{review && <button className="btn sm plain" onClick={() => onTag({ q })}>回答</button>}</div>)}</div></section>}
@@ -223,39 +227,70 @@ function Asset({ a, file }) {
 }
 
 // ---------- required inputs & lyrics ----------
+// Things only the user can give (a song, lyrics, their own character art…). Shown at the top of the page while the plan is
+// being written or reviewed, so they are found before "approve" is blocked by them.
 const KIND = { lyrics: '歌詞', audio: '音檔', image: '圖片', text: '文字', other: '檔案' };
-function RequiredInputs({ id, s, editable }) {
-  const req = s.requiredInputs || [];
+const ACCEPT = { audio: 'audio/*,video/*,.mp3,.m4a,.wav,.aac,.flac,.ogg', image: 'image/*', lyrics: '.txt,.lrc,text/plain', text: '.txt,.md,text/plain' };
+function RequiredInputs({ id, s, editable, top }) {
+  const req = s.requiredInputs || [], missing = req.filter((r) => r.status === 'missing');
   const hasLyrics = req.some((r) => r.kind === 'lyrics') || s.lyrics;
+  const [err, setErr] = useState(''), [busy, setBusy] = useState('');
+  const act = (k, fn) => async () => { setErr(''); setBusy(k); try { await fn(); } catch (e) { setErr(e.message); } setBusy(''); };
   return (
-    <section className="card">
-      <div className="card-h"><div><h2>需要你提供的素材</h2><div className="small muted" style={{ marginTop: 2 }}>全部提供或略過之後才能核准，生產中不會再卡在這裡。</div></div></div>
+    <section id="required-inputs" className={`card req ${top && missing.length ? 'req-top' : ''}`}>
+      <div className="card-h"><div>
+        <h2>{missing.length ? `需要你提供 ${missing.length} 項素材` : '需要你提供的素材'}</h2>
+        <div className="small muted" style={{ marginTop: 2 }}>{missing.length ? '這些只有你能給。提供或略過之後才能核准企劃，生產中不會再卡在這裡。' : '都處理好了。'}</div>
+      </div></div>
       {req.length > 0 && <div className="list">{req.map((r) => (
-        <div key={r.id} className="li">
-          <div className={`li-ico ${r.status === 'provided' ? 'ok' : r.status === 'missing' ? 'warn' : ''}`}><I n={r.status === 'provided' ? 'check' : r.status === 'waived' ? 'x' : r.kind === 'lyrics' ? 'music' : 'clip'} s={2} /></div>
-          <div className="grow"><div className="t">{r.label || r.id}</div><div className="d">{KIND[r.kind] || r.kind}{r.why ? ` · ${r.why}` : ''}</div></div>
-          {r.status !== 'missing' ? <span className={`cap ${r.status === 'provided' ? 'ok' : ''}`}>{r.status === 'provided' ? '已提供' : '已略過'}</span>
-            : editable && <div className="row" style={{ gap: 4 }}>{r.kind !== 'lyrics' && <Upload id={id} label="上傳" />}<button className="btn sm plain" onClick={() => api.waive(id, r.id)}>略過</button></div>}
+        <div key={r.id} className={`li req-li ${r.status}`}>
+          <div className={`li-ico ${r.status === 'provided' ? 'ok' : r.status === 'missing' ? 'warn' : ''}`}><I n={r.status === 'provided' ? 'check' : r.status === 'waived' ? 'x' : r.kind === 'lyrics' || r.kind === 'audio' ? 'music' : r.kind === 'image' ? 'image' : 'clip'} s={2} /></div>
+          <div className="grow">
+            <div className="t">{r.label || r.id}</div>
+            <div className="d">{KIND[r.kind] || r.kind}{r.why ? ` · ${r.why}` : ''}</div>
+            {r.files?.length > 0 && <div className="small faint req-files" data-no-i18n>{r.files.map((f) => f.split('/').pop()).join('、')}</div>}
+          </div>
+          <div className="req-act">
+            {r.status === 'provided' && <span className="cap ok"><I n="check" s={2.4} />已提供</span>}
+            {r.status === 'waived' && <><span className="cap">已略過</span>{editable && <button className="btn sm plain" disabled={!!busy} onClick={act('u' + r.id, () => api.unwaive(id, r.id))}>復原</button>}</>}
+            {editable && r.status !== 'waived' && r.kind !== 'lyrics' && <Upload id={id} forInput={r.id} accept={ACCEPT[r.kind]} multiple={r.kind === 'image' || r.kind === 'other'} label={r.status === 'provided' ? '更換' : `上傳${KIND[r.kind] || '檔案'}`} primary={r.status === 'missing'} />}
+            {editable && r.status === 'missing' && r.kind === 'lyrics' && <button className="btn sm primary" onClick={() => { const t = document.getElementById('lyrics-text'); t?.scrollIntoView({ behavior: 'smooth', block: 'center' }); t?.focus({ preventScroll: true }); }}><I n="pencil" />貼上歌詞</button>}
+            {editable && r.status !== 'waived' && r.kind === 'lyrics' && <Upload id={id} forInput={r.id} accept={ACCEPT.lyrics} label="上傳 .txt / .lrc" />}
+            {editable && r.status === 'missing' && <button className="btn sm plain" disabled={!!busy} onClick={act('w' + r.id, () => api.waive(id, r.id))}>略過</button>}
+          </div>
         </div>))}</div>}
+      {err && <div className="small" style={{ color: 'var(--red)', marginTop: 8 }}>{err}</div>}
       {hasLyrics && <Lyrics id={id} s={s} editable={editable || s.job.stage === 'needs_input'} />}
     </section>
   );
 }
-export function Upload({ id, label = '上傳檔案' }) {
-  const [busy, setBusy] = useState(false);
-  const up = async (files) => { if (!files.length) return; setBusy(true); const f = new FormData(); [...files].forEach((x) => f.append('inputs', x)); try { await api.addInputs(id, f); } finally { setBusy(false); } };
-  return <label className="btn sm">{busy ? <span className="spin-ring" /> : <I n="clip" />}{busy ? '上傳中' : label}<input type="file" multiple hidden onChange={(e) => up(e.target.files)} /></label>;
+export function Upload({ id, label = '上傳檔案', forInput, accept, multiple = true, primary }) {
+  const [busy, setBusy] = useState(false), [msg, setMsg] = useState({}), ref = useRef();
+  const up = async (files) => {
+    if (!files.length) return; setBusy(true); setMsg({});
+    const f = new FormData(); [...files].forEach((x) => f.append('inputs', x));
+    try { const r = await api.addInputs(id, f, null, forInput); setMsg({ names: (r.saved || []).map((p) => p.split('/').pop()).join('、') }); }
+    catch (e) { setMsg({ err: e.message }); } finally { setBusy(false); if (ref.current) ref.current.value = ''; }
+  };
+  return (
+    <span className="upload">
+      <label className={`btn sm ${primary ? 'primary' : ''}`}>{busy ? <span className="spin-ring" /> : <I n="clip" />}{busy ? '上傳中' : label}
+        <input ref={ref} type="file" multiple={multiple} accept={accept} hidden onChange={(e) => up(e.target.files)} /></label>
+      {msg.names && <span className="tiny faint up-msg"><span>已上傳</span> <span data-no-i18n>{msg.names}</span></span>}
+      {msg.err && <span className="tiny up-msg" style={{ color: 'var(--red)' }}>{msg.err}</span>}
+    </span>
+  );
 }
 function Lyrics({ id, s, editable }) {
   const [text, setText] = useState(''), [busy, setBusy] = useState(false), [msg, setMsg] = useState('');
   const L = s.lyrics?.lines || [];
   const mean = L.length ? L.reduce((a, l) => a + (l.match || 0), 0) / L.length : 0;
-  const go = async () => { setBusy(true); setMsg(''); try { const r = await api.lyrics(id, text); setMsg(r.aligned ? '對時完成' : r.ok ? '歌詞已存，配樂確定後會自動對時' : '對時失敗，請看右側紀錄'); if (r.ok) setText(''); } catch (e) { setMsg(e.message); } setBusy(false); };
+  const go = async () => { setBusy(true); setMsg(''); try { const r = await api.lyrics(id, text); setMsg(r.aligned ? '對時完成' : r.ok ? '歌詞已存，收到配樂後會自動對時' : '對時失敗，請看右側紀錄'); if (r.ok) setText(''); } catch (e) { setMsg(e.message); } setBusy(false); };
   return (
     <div style={{ marginTop: 18 }}>
       <div className="row" style={{ marginBottom: 8 }}><div className="sub-h" style={{ margin: 0 }}>歌詞字幕</div><span className="sp grow" />{L.length > 0 && <span className="cap ok"><I n="check" s={2.4} />{L.length} 句 · 平均匹配 {Math.round(mean * 100)}%</span>}</div>
       {editable && <>
-        <textarea className="field-area" placeholder={'貼上歌詞文字，一行一句。\n系統會用你提供的音檔自動對出每一句的時間，不需要自己做 LRC。'} value={text} onChange={(e) => setText(e.target.value)} />
+        <textarea id="lyrics-text" className="field-area" placeholder={'貼上歌詞文字，一行一句。\n系統會用你提供的音檔自動對出每一句的時間，不需要自己做 LRC。'} value={text} onChange={(e) => setText(e.target.value)} />
         <div className="row" style={{ marginTop: 10 }}><button className="btn sm primary" disabled={busy || !text.trim()} onClick={go}>{busy ? <><span className="spin-ring" />對時中，約 1 分鐘</> : <><I n="wand" />{L.length ? '重新對時' : '自動對時'}</>}</button><span className="small muted">{msg}</span></div>
       </>}
       {L.length > 0 && <div className="list" style={{ marginTop: 12, padding: '2px 4px' }}><table className="lyr"><tbody>{L.map((l, i) => <tr key={i} className={l.match < 0.6 ? 'low' : ''}><td className="tc">{fmt(l.start)} – {fmt(l.end)}</td><td>{l.text}</td><td style={{ whiteSpace: 'nowrap', textAlign: 'right' }} className="small faint"><span className="meter"><i style={{ width: `${Math.round((l.match || 0) * 100)}%` }} /></span>{l.match < 0.6 ? '用前後插值' : `${Math.round(l.match * 100)}%`}</td></tr>)}</tbody></table></div>}
@@ -269,6 +304,7 @@ function Approve({ id, open }) {
     <div className="approve-bar">
       <div className="grow"><b>{open.length ? `還差 ${open.length} 項素材` : '企劃看起來 OK 嗎？'}</b>
         <div className="small muted">{err || (open.length ? `請先提供或略過：${open.map((r) => r.label || r.id).join('、')}` : '有意見就在右邊說，AI 改完再給你看；核准後才開始生成。')}</div></div>
+      {open.length > 0 && <button className="btn" onClick={() => document.getElementById('required-inputs')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}><I n="up" />去提供</button>}
       <button className="btn primary lg" disabled={open.length > 0 || busy} onClick={go}>{busy ? <span className="spin-ring" /> : <I n="play" />}核准並開始生成</button>
     </div>
   );
@@ -342,11 +378,37 @@ function Needs({ id, s, file, onZoom }) {
   );
 }
 
+// ---------- review/fix round limits (header button + panel) ----------
+function RoundsButton({ id, r }) {
+  const [open, setOpen] = useState(false), [saving, setSaving] = useState(false), [err, setErr] = useState(''), ref = useRef();
+  const [local, setLocal] = useState(r.values);
+  useEffect(() => { if (!saving) setLocal(r.values); }, [r.values.castRounds, r.values.chunkRounds, r.values.finalRounds]);
+  useEffect(() => { if (!open) return; const k = (e) => { if (!ref.current?.contains(e.target)) setOpen(false); }; addEventListener('pointerdown', k); return () => removeEventListener('pointerdown', k); }, [open]);
+  const custom = Object.keys(r.defaults).filter((k) => r.values[k] !== r.defaults[k]).length;
+  const change = async (next) => {
+    const diff = Object.fromEntries(Object.keys(next).filter((k) => next[k] !== local[k]).map((k) => [k, next[k] == null ? '' : next[k]]));
+    setLocal({ ...local, ...Object.fromEntries(Object.entries(next).map(([k, v]) => [k, v ?? r.defaults[k]])) });
+    setSaving(true); setErr('');
+    try { await api.settings(id, diff); } catch (e) { setErr(e.message); setLocal(r.values); } finally { setSaving(false); }
+  };
+  return (
+    <div className="rd-wrap" ref={ref}>
+      <button className={`tool-chip ${custom ? 'on' : ''}`} onClick={() => setOpen(!open)} aria-expanded={open} title="每一關最多審查、修改幾輪"><I n="sliders" />審查輪數{custom > 0 && <span className="n">{custom}</span>}</button>
+      {open && <div className="rd-pop">
+        <div className="row" style={{ marginBottom: 4 }}><b style={{ fontSize: 15 }}>審查輪數</b><span className="grow" />{saving ? <span className="spin-ring" style={{ width: 12, height: 12 }} /> : <span className="tiny faint">已自動儲存</span>}</div>
+        <div className="tiny muted" style={{ marginBottom: 6 }}>做到一半也可以改，從下一次檢查開始生效。</div>
+        <RoundsEditor value={Object.fromEntries(Object.entries(local).map(([k, v]) => [k, v === r.defaults[k] ? null : v]))} defaults={r.defaults} min={r.min} max={r.max} onChange={change} />
+        {err && <div className="small" style={{ color: 'var(--red)', marginTop: 6 }}>{err}</div>}
+      </div>}
+    </div>
+  );
+}
+
 // ---------- production line ----------
 const CHUNK = { queued: ['排隊中', ''], building: ['製作中', 'live'], reviewing: ['審查中', 'live'], fixing: ['修正中', 'warn'], passed: ['通過', 'ok'], failed: ['未通過', 'bad'], error: ['錯誤', 'bad'], needs_user: ['等你提供', 'warn'], shared_fix: ['導演改共用檔', 'live'], waiting_cast: ['做好了，等角色關', ''], built: ['做好了，等角色關', ''] };
 const PHASES = [['setup', '建置', 'layers'], ['cast', '角色關', 'user'], ['shots', '分段製作', 'film'], ['assemble', '組裝', 'play'], ['final', '最後評審', 'mag']];
 function Pipeline({ s, file, onZoom }) {
-  const p = s.job.pipeline || {}, rv = s.cast?.review, chunks = Object.entries(p.chunks || {});
+  const p = s.job.pipeline || {}, rv = s.cast?.review, chunks = Object.entries(p.chunks || {}), R = s.rounds?.values || {};
   const cur = PHASES.findIndex(([k]) => k === p.phase), allDone = s.job.stage === 'done';
   const passed = chunks.filter(([, v]) => v.state === 'passed').length;
   return (
@@ -359,9 +421,9 @@ function Pipeline({ s, file, onZoom }) {
 
       {(s.cast?.sheets || []).length > 0 && <>
         <div className="row" style={{ marginTop: 22, marginBottom: 10 }}><div className="sub-h" style={{ margin: 0 }}>角色設定圖</div><span className="grow" />
-          {p.cast?.state && <span className={`cap ${p.cast.pass ? 'ok' : p.cast.state === 'failed' ? 'bad' : p.cast.state === 'fixing' ? 'warn' : 'live'}`}>{p.cast.pass ? <><I n="check" s={2.4} />已通過</> : { reviewing: '審查中', fixing: '導演修正中', failed: '未通過' }[p.cast.state] || p.cast.state}{p.cast.round > 1 ? ` · 第 ${p.cast.round} 輪` : ''}</span>}</div>
+          {p.cast?.state && <span className={`cap ${p.cast.pass ? 'ok' : p.cast.state === 'failed' ? 'bad' : p.cast.state === 'fixing' ? 'warn' : 'live'}`}>{p.cast.pass ? <><I n="check" s={2.4} />已通過</> : { reviewing: '審查中', fixing: '導演修正中', failed: '未通過' }[p.cast.state] || p.cast.state}{p.cast.round > 1 ? ` · 第 ${p.cast.round} / ${R.castRounds} 輪` : ''}</span>}</div>
         <div className="scroller">{(s.cast.sheets.filter((f) => /sheet/i.test(f.split('/').pop())).length ? s.cast.sheets.filter((f) => /sheet/i.test(f.split('/').pop())) : s.cast.sheets).map((f) => <img key={f} className="shot-img" src={file(f)} onClick={() => onZoom(file(f))} />)}</div>
-        {p.cast?.chars && <div className="chunks" style={{ marginTop: 12 }}>{Object.entries(p.cast.chars).map(([k, c]) => { const [t, cl] = CHUNK[c.state] || (c.state === 'waiting_shared' ? ['等導演改骨架', 'warn'] : [c.state, '']); return <div key={k} className={`chunk ${c.state}`}><div className="ch-h"><b style={{ fontSize: 15 }}>{(s.production?.characters || []).find((x) => x.id === k)?.name || k}</b><span className="grow" /><span className={`cap ${cl}`} style={{ height: 22, fontSize: 11.5 }}>{cl === 'live' && <span className="dot live" />}{t}</span></div>{c.round > 1 && <div className="tiny faint">第 {c.round} 輪</div>}</div>; })}</div>}
+        {p.cast?.chars && <div className="chunks" style={{ marginTop: 12 }}>{Object.entries(p.cast.chars).map(([k, c]) => { const [t, cl] = CHUNK[c.state] || (c.state === 'waiting_shared' ? ['等導演改骨架', 'warn'] : [c.state, '']); return <div key={k} className={`chunk ${c.state}`}><div className="ch-h"><b style={{ fontSize: 15 }}>{(s.production?.characters || []).find((x) => x.id === k)?.name || k}</b><span className="grow" /><span className={`cap ${cl}`} style={{ height: 22, fontSize: 11.5 }}>{cl === 'live' && <span className="dot live" />}{t}</span></div>{c.round > 1 && <div className="tiny faint">第 {c.round} / {R.castRounds} 輪</div>}</div>; })}</div>}
         {rv && !rv.pass && (rv.issues || []).length > 0 && <ul className="issues" onClick={(e) => e.target.closest('li')?.classList.toggle('open')}>{rv.issues.map((x, i) => <li key={i}><span className="tagc">{x.character || '角色'}</span><span>{x.what && <b>{x.what}：</b>}{x.issue}{x.fix && <span className="faint"> → {x.fix}</span>}</span></li>)}</ul>}
       </>}
 
@@ -371,7 +433,7 @@ function Pipeline({ s, file, onZoom }) {
           <div key={k} className={`chunk ${v.state}`}>
             <div className="ch-h"><b>{k}</b><span className="grow" /><span className={`cap ${c}`} style={{ height: 22, fontSize: 11.5 }}>{c === 'live' && <span className="dot live" />}{t}</span></div>
             <div className="small muted">{(v.shots || []).join(' · ')}</div>
-            {v.round > 1 && <div className="tiny faint">第 {v.round} 輪審查</div>}
+            {v.round > 1 && <div className="tiny faint">第 {v.round} / {R.chunkRounds} 輪審查</div>}
           </div>); })}</div>
       </>}
 

@@ -3,7 +3,7 @@
 import './env.mjs';   // first: API keys / tool paths from ~/.reelmimic/secrets.json
 import express from 'express';
 import multer from 'multer';
-import { existsSync, mkdirSync, renameSync } from 'node:fs';
+import { existsSync, mkdirSync, renameSync, unlinkSync } from 'node:fs';
 import { join, extname, resolve, sep } from 'node:path';
 import { agentStatus } from './agents/index.mjs';
 import * as J from './jobs.mjs';
@@ -34,8 +34,12 @@ app.post('/api/projects', upload.fields([{ name: 'reference', maxCount: 1 }, { n
   if (!ref && !isUrl(url)) return res.status(400).json({ error: '請上傳參考影片或貼上影片連結' });
   if (!['claude', 'codex'].includes(agent)) return res.status(400).json({ error: 'agent 必須是 claude 或 codex' });
   if (/�/.test(brief + (title || ''))) return res.status(400).json({ error: '需求文字編碼錯誤（請用 UTF-8 送出）' });
+  // optional review/fix round limits for this project (castRounds, chunkRounds, finalRounds: whole numbers 1–10)
+  let settings;
+  try { settings = Object.fromEntries(Object.entries(J.cleanRounds(req.body)).filter(([, v]) => v != null)); }
+  catch (e) { for (const f of Object.values(req.files || {}).flat()) try { unlinkSync(f.path); } catch {} return res.status(400).json({ error: e.message }); }
   const id = slug();
-  const job = J.createJob({ id, title: (title || brief.split('\n')[0] || '未命名').slice(0, 40), agent, brief, lang,
+  const job = J.createJob({ id, title: (title || brief.split('\n')[0] || '未命名').slice(0, 40), agent, brief, lang, settings,
     reference: ref ? { type: 'file', src: 'inputs/reference' + (extname(ref.originalname) || '.mp4') } : { type: 'url', src: url.trim() } });
   if (ref) renameSync(ref.path, join(J.dirOf(id), job.reference.src));
   for (const f of req.files?.inputs || []) renameSync(f.path, join(J.dirOf(id), 'inputs', fileName(f)));
@@ -47,7 +51,7 @@ app.get('/api/projects/:id', (req, res) => { if (guard(res, req.params.id)) res.
 
 // Extra inputs later (e.g. the user finds their song file during plan review).
 // ?to=attachments → chat attachments (inputs/attachments/, timestamped so repeats don't overwrite); returns the saved paths
-app.post('/api/projects/:id/inputs', upload.array('inputs', 20), (req, res) => {
+app.post('/api/projects/:id/inputs', upload.array('inputs', 20), async (req, res) => {
   if (!guard(res, req.params.id)) return;
   const attach = req.query.to === 'attachments', sub = attach ? join('inputs', 'attachments') : 'inputs';
   mkdirSync(join(J.dirOf(req.params.id), sub), { recursive: true });
@@ -56,6 +60,10 @@ app.post('/api/projects/:id/inputs', upload.array('inputs', 20), (req, res) => {
     const name = (attach ? `${Date.now().toString(36)}_` : '') + fileName(f);
     renameSync(f.path, join(J.dirOf(req.params.id), sub, name)); saved.push(`${sub.split(sep).join('/')}/${name}`);
   }
+  // ?for=<required input id>: these files answer that item (any file name); lyrics text/timing is handled there
+  if (!attach && req.query.for) J.provideInput(req.params.id, String(req.query.for), saved);
+  else if (!attach) J.alignIfReady(req.params.id).catch(() => null);   // background: lyrics waiting for music
+  J.touch(req.params.id);
   res.json({ ...J.snapshot(req.params.id), saved });
 });
 
@@ -81,8 +89,14 @@ app.post('/api/projects/:id/lyrics', async (req, res) => {
   res.json(await J.saveLyrics(id, text));
 });
 app.post('/api/projects/:id/waive', (req, res) => { const { id } = req.params; if (!guard(res, id)) return; J.waive(id, String(req.body?.input || '')); res.json(J.snapshot(id)); });
+app.post('/api/projects/:id/unwaive', (req, res) => { const { id } = req.params; if (!guard(res, id)) return; J.unwaive(id, String(req.body?.input || '')); res.json(J.snapshot(id)); });
 app.post('/api/projects/:id/resume', act(J.resume));
 app.post('/api/projects/:id/accept', act(J.accept));
+// Review/fix round limits for this project. Allowed any time (also while agents work): the next check uses the new value.
+app.post('/api/projects/:id/settings', (req, res) => {
+  if (!guard(res, req.params.id)) return;
+  try { res.json(J.setRounds(req.params.id, req.body || {})); } catch (e) { res.status(400).json({ error: e.message }); }
+});
 app.get('/api/config', (req, res) => res.json(J.CONFIG));
 app.post('/api/projects/:id/retry', act(J.retry));
 app.post('/api/projects/:id/critique', act(J.critique));
