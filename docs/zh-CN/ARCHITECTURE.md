@@ -138,6 +138,6 @@ projects/<id>/
 | `compare.py` | 成片与参考片逐镜并排比较 |
 | `hf_frames.py` | HyperFrames 项目截屏：一次调用多个时间点、PIL 裁切、依内容缓存、全机并行上限 |
 | `fetch_assets.py` | 授权安全素材搜索与下载（Openverse、Pixabay、Freesound），自动写 ASSETS.md |
-| `align_lyrics.py` | 用户提供的歌词文本 × 音频文件 → 每句时间（faster-whisper 只当量尺） |
+| `align_lyrics.py` | 用户提供的歌词文本 × 音档 → 每句时间（faster-whisper 只当量尺） |
 | `yating_tts.py` | 雅婷台湾华语语音 |
 | `timeline.py` | 分析一支片的生产时间：每个阶段、每个 agent、时间花在哪 |

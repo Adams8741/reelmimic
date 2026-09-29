@@ -1,7 +1,7 @@
 ---
 name: my-style                 # 唯一代號（檔名同名）
 engine: painted-animation      # 交給哪個 skill 製作（.claude/skills/ 底下的資料夾名）
-medium: 2d-painted          # 媒材：2d-painted · 2d-vector · 3d-stylized · 3d-photoreal（選 skill 的硬條件）
+medium: 2d-painted          # 媒材：2d-painted · 2d-crayon · 2d-vector · 2d-pixel · 2d-paper · 2d-lineart · 2d-cel · 3d-stylized · 3d-photoreal（選 skill 的硬條件）
 priority: 50                   # 兩種風格都符合時，數字大的優先
 ---
 # 風格名稱（一句話描述）

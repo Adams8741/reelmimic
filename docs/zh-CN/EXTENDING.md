@@ -60,6 +60,10 @@ ReelMimic 的扩充点由浅到深：
 
 然后写一个指向它的风格档（上一节）。第三方 skill 放进来前，请先看过它的脚本，并把授权补进 `THIRD_PARTY_NOTICES.md`。
 
+### 从引擎骨架开始
+
+`.claude/skills/video-clone/assets/engine-kit/` 是做新画法最快的起点：像素风、剪纸、白板、动漫四个引擎都建在它上面。里面有共用的运行环境（时间轴、动作函数、镜头、字幕与渲染界面）、无头 Chrome 的 `render.mjs`、页面范本、`new_project.sh`，以及当初做这些引擎用的检查清单 `ENGINE_BRIEF.md`。拷贝到 `.claude/skills/<你的引擎>/template/`，写好画法函数库和角色，就直接有平行渲染、审查用的总览图与裁切、可续跑的输出。
+
 ### 角色系统
 
 - `assets/vector_rig/`：2D 矢量角色，骨架（脖子、肩、肘、腕、髋、膝）＋每个深度层只描一次外框，四肢永远接在身上。用法见其 README。
@@ -120,7 +124,7 @@ agent 需要能：读写 repo 内文件、运行 shell（python、node、ffmpeg�
 ```bash
 cd app
 npm run server      # 只跑后端（改 server/ 后重启：bash app/restart.sh）
-npm run web         # 前端开发服务器 http://localhost:5173（热更新，/api 转到 4318）
+npm run web         # 前端开发服务器 http://localhost:5173（熱更新，/api 转到 4318）
 npm run build       # 输出 app/dist，给 npm start / start.sh 用
 npm run doctor      # 环境检查
 ```

@@ -17,8 +17,8 @@
 <table>
   <tr>
     <td align="center" width="33%"><img src="docs/assets/demo-sugar.gif" alt="Sugar Rush"></td>
-    <td align="center" width="33%"><img src="docs/assets/demo-sunshine-boy.gif" alt="阳光宅男"></td>
-    <td align="center" width="33%"><img src="docs/assets/demo-cat-bath.gif" alt="橘宝洗澡记"></td>
+    <td align="center" width="33%"><img src="docs/assets/demo-sunshine-boy.gif" alt="陽光宅男"></td>
+    <td align="center" width="33%"><img src="docs/assets/demo-cat-bath.gif" alt="橘寶洗澡記"></td>
   </tr>
   <tr>
     <td align="center"><b>Sugar Rush</b><br><sub>MV · 手绘水彩 · 58 秒</sub></td>
@@ -72,15 +72,15 @@ ReelMimic 学的是参考片的做法，不是把原本的画面、角色或素�
 
 ## 先说清楚
 
-- **目前只做 2D，有两种画法：** 干净的矢量／动态图像（以 [HyperFrames](https://github.com/heygen-com/hyperframes) 为基础），以及手绘水彩（以 [painted-animation](https://github.com/tuzhechen2005/painted-animation) 为基础）。参考片对不到已知风格时，会用最接近的画法做，并写一份新风格的建议。
-- **需要一点时间。** 30–60 秒的视频，企划核准后通常要 1–3.5 小时，看长度和画风。手绘水彩最慢，因为每一格都是画出来的。
+- **目前只做 2D，有七种画法：** 矢量／动态图像（以 [HyperFrames](https://github.com/heygen-com/hyperframes) 为基础）、手绘水彩（以 [painted-animation](https://github.com/tuzhechen2005/painted-animation) 为基础）、蜡笔绘本、像素风、剪纸定格、白板手绘、动漫赛璐璐。后面五种比较新，实际做片的次数比前两种少。参考片对不到已知风格时，会用最接近的画法做，并写一份新风格的建议。
+- **需要一点时间。** 30–60 秒的视频，企划核准后通常要 1–3.5 小时，看长度和画风。手绘水彩和蜡笔最慢，因为每一格都是用笔刷画出来的。
 - **用的是你的 AI 额度。** 所有工作都通过你的 Claude Code 或 Codex 账号跑，会算进那个账号的用量。额度用完时会暂停，之后可以从停下来的地方继续。
 - **主要在 Windows 上测过。** macOS 和 Linux 应该可以用，但测得比较少，有问题欢迎开 issue。
 - **不做真人。** 它做的是动画，不会生成真实人物的实拍画面。
 
 ## 接下来
 
-- 更多画法（像素风、动漫风手绘角色）
+- 每种画法更多内置角色与风格
 - 在网站上一键把新发现的风格存起来，下次遇到同类参考片就直接对到
 - 让手绘水彩渲染更快
 

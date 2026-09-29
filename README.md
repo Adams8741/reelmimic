@@ -76,12 +76,14 @@ The whole thing runs on your own computer, with your own Claude Code or Codex.
 
 ## Good to know
 
-- **2D only, two drawing engines so far:** clean vector / motion graphics (built on
-  [HyperFrames](https://github.com/heygen-com/hyperframes)) and hand-painted watercolor (built on
-  [painted-animation](https://github.com/tuzhechen2005/painted-animation)). When a reference doesn't match a known
-  style, it uses the closest engine and writes up a proposal for a new style.
+- **2D only, seven drawing engines:** vector / motion graphics (built on
+  [HyperFrames](https://github.com/heygen-com/hyperframes)), hand-painted watercolor (built on
+  [painted-animation](https://github.com/tuzhechen2005/painted-animation)), crayon picture book, pixel art, paper
+  cut-out stop-motion, whiteboard doodle, and anime cel. The newer five are young and have had less real-world use than
+  the first two. When a reference doesn't match a known style, it uses the closest engine and writes up a proposal
+  for a new style.
 - **It takes a while.** A 30–60 second video usually takes 1–3.5 hours after you approve the plan, depending on the
-  length and the look. Watercolor is the slowest, because every frame is painted.
+  length and the look. Watercolor and crayon are the slowest, because every frame is painted with brushes.
 - **It uses your AI plan.** All the work runs through your Claude Code or Codex account, so it counts toward that
   account's usage. If you hit a limit, the job pauses and can pick up where it stopped.
 - **Tested mostly on Windows.** macOS and Linux should work, but they've had less testing. Issues are welcome.
@@ -89,7 +91,7 @@ The whole thing runs on your own computer, with your own Claude Code or Codex.
 
 ## Roadmap
 
-- More drawing engines (pixel art, anime-style hand-drawn characters)
+- More built-in characters and styles for each engine
 - Save a newly discovered style from the web app, so the next similar reference matches it directly
 - Faster watercolor rendering
 

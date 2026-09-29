@@ -31,7 +31,8 @@ python .claude/skills/video-clone/scripts/analyze.py "<檔案或網址>" --out p
 以及**每個鏡頭的運鏡（shot_details：推近/拉遠/平移/環繞/靜止 + 快慢）與畫面數據（亮度、對比、暗部比例、飽和度、主色）**，`look_summary` 是整支的摘要。
 
 然後**用 Read 打開 `sheet_1fps.jpg` 和 `sheet_scenes.jpg` 實際看**，搭配 `report.json` 寫 `analysis/STYLE.md`：
-- **媒材**（必填、放第一行）：2d-painted · 2d-vector · 3d-stylized · 3d-photoreal · live-action。這是選 skill 的硬條件
+- **媒材**（必填、放第一行）：2d-painted（水彩／墨線）· 2d-crayon（蠟筆／色鉛筆繪本）· 2d-vector（扁平向量、動態圖像）· 2d-pixel（像素）·
+  2d-paper（剪紙／定格）· 2d-lineart（白板／手繪線稿解說）· 2d-cel（日式動畫賽璐璐）· 3d-stylized · 3d-photoreal · live-action。這是選 skill 的硬條件
 - 鏡頭清單：把 `shot_details` 整理成表（編號、秒數、內容、運鏡與快慢、亮暗），企劃會逐鏡對照這張表
 - 配色與色彩弧線、角色造型語言
 - 剪接：鏡頭數、平均鏡頭長度（秒與拍）、切點是否對拍、轉場種類
@@ -45,7 +46,7 @@ python .claude/skills/video-clone/scripts/analyze.py "<檔案或網址>" --out p
 
 讀 `styles/` 底下所有 `*.md`（`_TEMPLATE.md` 除外）。每個檔案的 frontmatter 有 `engine`（交給哪個 skill）、`medium` 與 `priority`，內文有「辨識特徵」。
 **engine 對應的 `.claude/skills/<engine>/` 資料夾不存在的風格直接跳過**（使用者沒有安裝那個引擎，例如開源版不附的 Remotion skills）。
-- **先過濾媒材**：只考慮 `medium` 與參考片媒材相同的風格（live-action 參考片 → 用 3d-photoreal 或最接近的 CG 媒材重現，並告訴使用者）。
+- **先過濾媒材**：只考慮 `medium` 與參考片媒材相同的風格；沒有同媒材的風格時，選畫面最接近的媒材並在 why 說明（live-action 參考片 → 用最接近的 2D 媒材重現，並告訴使用者）。
   **目前只做 2D**（3D 賽道暫停，`styles/_disabled/` 裡的風格不參與選擇）。參考片是 3D／擬真時，選最接近的 2D 風格，
   重現它的節奏、運鏡、構圖、光影氣氛與字卡手法（例如黑底＋光暈、慢推、灰白兩階標語），並在 route.json 的 why 與回報裡明說
   「參考片是 3D，這支用 2D 重現」——不要默默降級。

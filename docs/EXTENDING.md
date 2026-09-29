@@ -70,6 +70,15 @@ to build `build/production.json`):
 Then write a style file pointing to it (previous section). Before adding a third-party skill, read its scripts and add
 its license to `THIRD_PARTY_NOTICES.md`.
 
+### Starting from the engine kit
+
+`.claude/skills/video-clone/assets/engine-kit/` is the fastest way to build a new look. It has the shared runtime the
+pixel-art, paper-cutout, whiteboard and anime-cel engines are built on (timeline, motion helpers, camera, captions and
+the render contract), the headless-Chrome `render.mjs`, a page template, `new_project.sh`, and `ENGINE_BRIEF.md`, the
+checklist those engines were built from. Copy it into `.claude/skills/<your-engine>/template/`, write your drawing
+library and characters, and you get parallel rendering, contact sheets and crops for review, and resumable export for
+free.
+
 ### Character systems
 
 - `assets/vector_rig/`: 2D vector characters — a skeleton (neck, shoulders, elbows, wrists, hips, knees) with one

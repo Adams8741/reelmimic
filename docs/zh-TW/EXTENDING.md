@@ -60,6 +60,10 @@ ReelMimic 的擴充點由淺到深：
 
 然後寫一個指向它的風格檔（上一節）。第三方 skill 放進來前，請先看過它的腳本，並把授權補進 `THIRD_PARTY_NOTICES.md`。
 
+### 從引擎骨架開始
+
+`.claude/skills/video-clone/assets/engine-kit/` 是做新畫法最快的起點：像素風、剪紙、白板、動漫四個引擎都建在它上面。裡面有共用的執行環境（時間軸、動作函式、鏡頭、字幕與渲染介面）、無頭 Chrome 的 `render.mjs`、頁面範本、`new_project.sh`，以及當初做這些引擎用的檢查清單 `ENGINE_BRIEF.md`。複製到 `.claude/skills/<你的引擎>/template/`，寫好畫法函式庫和角色，就直接有平行渲染、審查用的總覽圖與裁切、可續跑的輸出。
+
 ### 角色系統
 
 - `assets/vector_rig/`：2D 向量角色，骨架（脖子、肩、肘、腕、髖、膝）＋每個深度層只描一次外框，四肢永遠接在身上。用法見其 README。

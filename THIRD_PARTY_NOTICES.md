@@ -1,6 +1,6 @@
 # Third-party notices
 
-ReelMimic's own code (`app/`, `.claude/skills/video-clone/`, `.claude/skills/blender-product-film/`) is MIT-licensed (see `LICENSE`).
+ReelMimic's own code (`app/`, `.claude/skills/video-clone/`, `.claude/skills/blender-product-film/`, and the `pixel-art`, `paper-cutout`, `whiteboard`, `anime-cel` engines apart from their `render.mjs`) is MIT-licensed (see `LICENSE`).
 The following bundled skills and assets keep their original licenses.
 
 | Path | Upstream | License | Copyright |
@@ -11,6 +11,7 @@ The following bundled skills and assets keep their original licenses.
 | `.claude/skills/frontend-design` | [anthropics/skills](https://github.com/anthropics/skills) | Apache-2.0 (`LICENSE.txt` included) | © Anthropic |
 | `.claude/skills/ffmpeg` | [digitalsamba/claude-code-video-toolkit](https://github.com/digitalsamba/claude-code-video-toolkit) | MIT | © 2024 Digital Samba |
 | `.claude/skills/painted-animation` | [tuzhechen2005/painted-animation](https://github.com/tuzhechen2005/painted-animation); `template/` from [JohnHeibel/ClaudeAnimationBase](https://github.com/JohnHeibel/ClaudeAnimationBase) | MIT (both `LICENSE` files included) | © 2026 tuzhechen2005; © 2026 John Heibel |
+| `.claude/skills/crayon-storybook` (runtime derived from painted-animation); `render.mjs` in `video-clone/assets/engine-kit/` and in the `pixel-art`, `paper-cutout`, `whiteboard`, `anime-cel` templates | painted-animation / ClaudeAnimationBase (above) | MIT (`LICENSE` / `LICENSE-render.mjs.txt` included next to them) | © 2026 tuzhechen2005; © 2026 John Heibel |
 | Fonts in `embedded-captions`, `talking-head-recut`, `hyperframes-creative` | Google Fonts / Excalidraw (Virgil) | SIL Open Font License 1.1 | respective authors |
 
 Apache-2.0 full text: [LICENSES/Apache-2.0.txt](LICENSES/Apache-2.0.txt) (also <https://www.apache.org/licenses/LICENSE-2.0>) · MIT: see each upstream repository.
