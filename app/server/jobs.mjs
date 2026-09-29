@@ -38,6 +38,30 @@ export const CONFIG = {
   maxAgentsGlobal: +(process.env.MAX_AGENTS || 12), // all projects together (CLI rate limits, CPU/GPU for renders)
 };
 
+// Review/fix round limits: CONFIG holds the defaults; a project can set its own (job.settings), read at every check so a
+// change applies from the next round on. When a limit is reached the job pauses for the user instead of looping.
+export const ROUND_KEYS = ['castRounds', 'chunkRounds', 'finalRounds'];
+export const ROUND_RANGE = { min: 1, max: 10 };
+export function rounds(id) { const s = load(id).settings || {}; return Object.fromEntries(ROUND_KEYS.map((k) => [k, s[k] ?? CONFIG[k]])); }
+// Validates { castRounds?, chunkRounds?, finalRounds? } (whole numbers 1–10; '' / null = back to the default). Throws on bad input.
+export function cleanRounds(input = {}) {
+  const out = {};
+  for (const k of ROUND_KEYS) {
+    if (!(k in input)) continue;
+    const raw = input[k];
+    if (raw === '' || raw == null) { out[k] = null; continue; }
+    const v = Number(raw);
+    if (!Number.isInteger(v) || v < ROUND_RANGE.min || v > ROUND_RANGE.max) throw new Error(`${k} must be a whole number from ${ROUND_RANGE.min} to ${ROUND_RANGE.max}`);
+    out[k] = v;
+  }
+  return out;
+}
+export function setRounds(id, input) {
+  const clean = cleanRounds(input);
+  update(id, (x) => { const s = { ...(x.settings || {}) }; for (const [k, v] of Object.entries(clean)) { if (v == null) delete s[k]; else s[k] = v; } x.settings = s; });
+  return snapshot(id);
+}
+
 export const bus = new EventEmitter(); bus.setMaxListeners(100);
 const running = new Map();   // id → Set<AbortController>
 // Stop every agent this server started (on shutdown), so none keeps working unseen after a restart.
@@ -106,14 +130,15 @@ export function snapshot(id) {
     production: readJSON(join(d, 'build', 'production.json')),
     lyrics: readJSON(join(d, 'analysis', 'lyrics', 'subs.json')),
     requiredInputs: requiredInputs(id, plan, job),
+    rounds: { values: rounds(id), defaults: Object.fromEntries(ROUND_KEYS.map((k) => [k, CONFIG[k]])), ...ROUND_RANGE },
     inputs: list('inputs', /./),
   };
 }
 
-export function createJob({ id, title, agent, brief, reference, lang = 'zh-TW' }) {
+export function createJob({ id, title, agent, brief, reference, lang = 'zh-TW', settings = {} }) {
   const d = dirOf(id); mkdirSync(join(d, 'inputs'), { recursive: true }); mkdirSync(join(d, 'analysis'), { recursive: true });
   writeFileSync(join(d, 'brief.md'), brief || '');
-  const job = { id, title, agent, lang, reference, stage: 'new', sessionId: null, sessions: {}, createdAt: now(), chat: [], log: [], needs: [], waived: [], pipeline: {} };
+  const job = { id, title, agent, lang, reference, settings, stage: 'new', sessionId: null, sessions: {}, createdAt: now(), chat: [], log: [], needs: [], waived: [], pipeline: {} };
   save(job);
   return job;
 }
@@ -129,26 +154,56 @@ function requiredInputs(id, plan, job) {
   const d = dirOf(id), files = existsSync(join(d, 'inputs')) ? readdirSync(join(d, 'inputs')) : [];
   return (plan?.required_inputs || []).map((r) => {
     let status = 'missing';
+    const given = (job.provided?.[r.id] || []).filter((f) => existsSync(join(d, f)));
     if ((job.waived || []).includes(r.id)) status = 'waived';
-    else if (r.kind === 'lyrics' && (existsSync(join(d, 'analysis', 'lyrics', 'subs.lrc')) || files.some((f) => /\.lrc$/i.test(f)))) status = 'provided';
+    else if (given.length) status = 'provided';   // uploaded for this item from the web app
+    else if (r.kind === 'lyrics' && (existsSync(join(d, 'inputs', 'lyrics.txt')) || existsSync(join(d, 'analysis', 'lyrics', 'subs.lrc')) || files.some((f) => /\.lrc$/i.test(f)))) status = 'provided';
     else if (r.file && existsSync(join(d, r.file))) status = 'provided';
     else if (r.kind !== 'lyrics' && files.some((f) => f.toLowerCase().includes((r.match || r.id).toLowerCase()))) status = 'provided';
-    return { ...r, status };
+    return { ...r, status, files: given };
   });
 }
 export function openInputs(id) { const s = snapshot(id); return s.requiredInputs.filter((r) => r.status === 'missing'); }
 export function waive(id, inputId) { update(id, (j) => { j.waived = [...new Set([...(j.waived || []), inputId])]; j.needs = (j.needs || []).filter((n) => n.input !== inputId); }); }
+export function unwaive(id, inputId) { update(id, (j) => { j.waived = (j.waived || []).filter((x) => x !== inputId); }); }
+export function touch(id) { update(id, () => {}); }   // tell open pages to reload (e.g. after files were added)
+
+// Files uploaded for one required input (inputs/…): remember which item they answer, so any file name counts.
+// A .txt for a lyrics item is taken as the lyric text. Then time the lyrics if the music is there now.
+export function provideInput(id, inputId, saved) {   // records the answer now; lyric timing (≈1 min) runs in the background
+  const d = dirOf(id), r = (readJSON(join(d, 'plan.json'))?.required_inputs || []).find((x) => x.id === inputId);
+  if (!r || !saved.length) return false;
+  update(id, (j) => { j.provided = { ...(j.provided || {}), [inputId]: saved }; j.waived = (j.waived || []).filter((x) => x !== inputId); });
+  const txt = r.kind === 'lyrics' && saved.find((f) => /\.txt$/i.test(f)), text = txt && !/(^|\/)lyrics\.txt$/i.test(txt) ? readText(join(d, txt)) : null;
+  (text?.trim() ? saveLyrics(id, text) : alignIfReady(id)).catch((e) => console.error(e));
+  return true;
+}
+// Lyrics pasted before the music arrived are only text: time them as soon as there is audio (and again before production).
+export async function alignIfReady(id) {
+  const d = dirOf(id);
+  if (!existsSync(join(d, 'inputs', 'lyrics.txt')) || existsSync(join(d, 'analysis', 'lyrics', 'subs.lrc')) || !musicFile(id)) return null;
+  return saveLyrics(id, readText(join(d, 'inputs', 'lyrics.txt')));
+}
+// The song to time lyrics against: the plan's music file, else a file the user uploaded for an audio item, else any audio in inputs/.
+function musicFile(id) {
+  const d = dirOf(id), plan = readJSON(join(d, 'plan.json')) || {}, job = load(id), AUD = /\.(mp3|m4a|wav|aac|flac|ogg|opus|mp4|mov|webm)$/i;
+  if (plan.music?.file && existsSync(join(d, plan.music.file))) return plan.music.file;
+  const audioIds = (plan.required_inputs || []).filter((r) => r.kind === 'audio').map((r) => r.id);
+  for (const k of audioIds) for (const f of job.provided?.[k] || []) if (AUD.test(f) && existsSync(join(d, f))) return f;
+  const f = existsSync(join(d, 'inputs')) ? readdirSync(join(d, 'inputs')).find((x) => AUD.test(x) && !/^reference\./i.test(x)) : null;
+  return f ? `inputs/${f}` : null;
+}
 
 // The user pastes lyrics (their text) → inputs/lyrics.txt → timed against the plan's music section → analysis/lyrics/subs.lrc
 export function saveLyrics(id, text) {
   const d = dirOf(id); writeFileSync(join(d, 'inputs', 'lyrics.txt'), text.trim() + '\n');
   const plan = readJSON(join(d, 'plan.json')) || {}, m = plan.music || {};
-  const audio = m.file && existsSync(join(d, m.file)) ? join(d, m.file) : null;
+  const song = musicFile(id), audio = song ? join(d, song) : null;
   const out = join(d, 'analysis', 'lyrics'); mkdirSync(out, { recursive: true });
-  if (!audio) { log(id, { type: 'text', text: '歌詞已存，等企劃決定配樂段落後再對時' }); return Promise.resolve({ ok: true, aligned: false }); }
+  if (!audio) { log(id, { type: 'text', text: L(id, '歌詞已存，收到配樂後會自動對時', 'Lyrics saved; they will be timed as soon as the music arrives') }); return Promise.resolve({ ok: true, aligned: false }); }
   const args = [join(SCRIPTS, 'align_lyrics.py'), audio, join(d, 'inputs', 'lyrics.txt'), '--out', join(out, 'subs.lrc')];
-  if (m.section?.start_s != null && !/clip/i.test(m.file)) args.push('--start', String(m.section.start_s), '--end', String(m.section.end_s));
-  log(id, { type: 'tool', name: 'align_lyrics.py', detail: `對時：${m.file}` });
+  if (m.section?.start_s != null && !/clip/i.test(song)) args.push('--start', String(m.section.start_s), '--end', String(m.section.end_s));
+  log(id, { type: 'tool', name: 'align_lyrics.py', detail: `對時：${song}` });
   return new Promise((resolve) => {
     const p = spawn(PY, args, { cwd: ROOT, env: { ...process.env, PYTHONIOENCODING: 'utf-8' } }); let o = '';
     p.stdout.on('data', (b) => { o += b; }); p.stderr.on('data', () => {});
@@ -230,7 +285,8 @@ async function step(id, stageName, phase, vars, must, next, opts) {
 function collectNeeds(id, items, from) {
   const add = (items || []).filter(Boolean).map((n) => ({ ...n, from, at: now() }));
   if (!add.length) return 0;
-  update(id, (j) => { j.needs = [...(j.needs || []).filter((x) => !add.some((a) => a.issue === x.issue)), ...add]; });
+  // a new batch from the same reviewer replaces its earlier one (the critic re-reports open items every round)
+  update(id, (j) => { j.needs = [...(j.needs || []).filter((x) => x.from !== from && !add.some((a) => a.issue === x.issue)), ...add]; });
   chat(id, 'system', L(id, `需要你提供：${add.map((n) => n.issue).join('；')}`, `Needs your input: ${add.map((n) => n.issue).join('; ')}`));
   return add.length;
 }
@@ -329,6 +385,7 @@ function snapshotEngine(id) {
 export async function approve(id) {
   const open = openInputs(id);
   if (open.length) { const e = new Error('還有需要你提供或略過的素材：' + open.map((r) => r.label || r.id).join('、')); e.code = 409; throw e; }
+  await alignIfReady(id).catch(() => null);   // lyrics pasted before the music arrived: time them now, before anything is built
   update(id, (j) => { j.approvedAt = now(); j.approvedPlanVersion = readJSON(join(dirOf(id), 'plan.json'))?.version; j.engineSnapshot = snapshotEngine(id); j.pipeline = {}; j.sessions = j.approvedAtPrev ? {} : Object.fromEntries(Object.entries(j.sessions || {}).filter(([k]) => k.startsWith('cast-'))); j.approvedAtPrev = true; j.needs = []; j.userNote = null; });
   chat(id, 'system', L(id, `企劃已核准，開始生產：角色關 → 分段製作（每段做完立刻審）→ 組裝 → 最後評審`, 'Plan approved. Production: characters → parts built and reviewed as they finish → assembly → final review'));
   if (await production(id, { fresh: true })) await finalPanel(id);
@@ -349,7 +406,8 @@ async function production(id, { fresh = false } = {}) {
   const prod = readJSON(join(d, 'build', 'production.json')) || {};
   const chunks = prod.chunks || [];
   const old = prev.chunks || {};
-  pipe(id, (p) => { p.phase = 'shots'; p.chunks = Object.fromEntries(chunks.map((c) => [c.id, old[c.id]?.state === 'passed' ? old[c.id] : { shots: c.shots, state: 'queued', round: 0, fixFirst: !!old[c.id]?.fixFirst }])); });
+  // a segment that stopped at its round limit already has a fresh review: resuming fixes those issues first instead of re-reviewing unchanged shots
+  pipe(id, (p) => { p.phase = 'shots'; p.chunks = Object.fromEntries(chunks.map((c) => [c.id, old[c.id]?.state === 'passed' ? old[c.id] : { shots: c.shots, state: 'queued', round: 0, fixFirst: !!old[c.id]?.fixFirst || old[c.id]?.state === 'failed' }])); });
   const runChunk = async (c) => {
     const key = `builder-${c.id}`, set = (s) => pipe(id, (p) => Object.assign(p.chunks[c.id], s));
     if (load(id).pipeline.chunks[c.id].state === 'passed') return true;
@@ -400,7 +458,7 @@ async function production(id, { fresh = false } = {}) {
       if (collectNeeds(id, needs, `shot-qa-${c.id}`)) { set({ state: 'needs_user' }); return false; }
       const bad = c.shots.map((x) => results[x]?.entry).filter((e) => e && !shotPassed(e));
       if (!bad.length) { set({ state: 'passed' }); return true; }
-      if (round >= CONFIG.chunkRounds) { set({ state: 'failed', open: bad.length }); return false; }
+      if (round >= rounds(id).chunkRounds) { set({ state: 'failed', open: bad.length }); return false; }
       set({ state: 'fixing' });
       const f = await turn(id, 'fix_chunk', { chunk: c, bad, round, message: load(id).userNote }, [`out/check/shots/${c.id}.fixes.json`], { session: key, who: key });
       if (!f.ok) { set({ state: 'error' }); return false; }
@@ -453,14 +511,18 @@ async function castGate(id, prev) {
   chat(id, 'system', L(id, `角色關：${chars.length} 個角色各自由一組審查＋修正同時進行`, `Characters: reviewing and fixing ${chars.length} character${chars.length > 1 ? 's' : ''} in parallel`));
   const shared = [];
   const one = async (c) => {
+    // resuming a character that stopped at its round limit: its last review is still current, so fix those issues first
+    const reuse = keep[c.id]?.state === 'failed' && existsSync(join(d, 'out', 'check', 'cast', `review_${c.id}.json`));
     for (let round = 1; ; round++) {
       setC(c.id, { state: 'reviewing', round });
-      const r = await turn(id, 'cast_qa', { round, character: c }, [`out/check/cast/review_${c.id}.json`], { session: 'fresh', who: `cast-qa-${c.id}` });
-      if (!r.ok) { setC(c.id, { state: 'error' }); return 'error'; }
+      if (!(round === 1 && reuse)) {
+        const r = await turn(id, 'cast_qa', { round, character: c }, [`out/check/cast/review_${c.id}.json`], { session: 'fresh', who: `cast-qa-${c.id}` });
+        if (!r.ok) { setC(c.id, { state: 'error' }); return 'error'; }
+      }
       const rv = readJSON(join(d, 'out', 'check', 'cast', `review_${c.id}.json`)) || {};
       if (collectNeeds(id, rv.needs_user, `cast-qa-${c.id}`)) { setC(c.id, { state: 'needs_user' }); return 'needs'; }
       if (passed(rv)) { setC(c.id, { state: 'passed' }); return 'passed'; }
-      if (round >= CONFIG.castRounds) { setC(c.id, { state: 'failed', issues: (rv.issues || []).length }); return 'failed'; }
+      if (round >= rounds(id).castRounds) { setC(c.id, { state: 'failed', issues: (rv.issues || []).length }); return 'failed'; }
       setC(c.id, { state: 'fixing' });
       const f = await turn(id, 'cast_fix', { issues: rv.issues || [], round, character: c, rigFiles: prod.rig_files || [] }, [c.sheet, `out/check/cast/fixes_${c.id}.json`], { session: `cast-${c.id}`, who: `cast-${c.id}` });
       if (!f.ok) { setC(c.id, { state: 'error' }); return 'error'; }
@@ -471,7 +533,7 @@ async function castGate(id, prev) {
   };
   let res = await Promise.all(chars.map((c) => (keep[c.id]?.state === 'passed' ? 'passed' : one(c))));
   if (res.includes('needs')) return pause(id);
-  for (let k = 0; shared.length && k < CONFIG.castRounds; k++) {   // skeleton changes: one director turn, then re-check who asked (and anyone it may affect)
+  for (let k = 0; shared.length && k < rounds(id).castRounds; k++) {   // skeleton changes: one director turn, then re-check who asked (and anyone it may affect)
     pipe(id, (p) => { p.cast.state = 'fixing'; });
     const f = await turn(id, 'cast_fix', { issues: [...shared], round: 'shared', shared: true }, ['out/check/cast/sheet.jpg'], { who: 'director' });
     if (!f.ok) return fail(id, 'producing', f);
@@ -479,7 +541,7 @@ async function castGate(id, prev) {
     res = await Promise.all(chars.map((c, i) => (res[i] === 'passed' || res[i] === 'shared' ? one(c) : res[i])));
     if (res.includes('needs')) return pause(id);
   }
-  if (res.some((x) => x !== 'passed')) { pipe(id, (p) => { p.cast.state = 'failed'; p.cast.round = CONFIG.castRounds; }); chat(id, 'system', L(id, `角色關：${chars.filter((c, i) => res[i] !== 'passed').map((c) => c.name || c.id).join('、')} 審了 ${CONFIG.castRounds} 輪還沒通過，請你看設定圖決定`, `Characters: ${chars.filter((c, i) => res[i] !== 'passed').map((c) => c.name || c.id).join(', ')} still not passing after ${CONFIG.castRounds} rounds. Please check the character sheets and decide`)); setStage(id, 'needs_input'); return false; }
+  if (res.some((x) => x !== 'passed')) { pipe(id, (p) => { p.cast.state = 'failed'; p.cast.round = rounds(id).castRounds; }); chat(id, 'system', L(id, `角色關：${chars.filter((c, i) => res[i] !== 'passed').map((c) => c.name || c.id).join('、')} 審了 ${rounds(id).castRounds} 輪還沒通過，請你看設定圖決定`, `Characters: ${chars.filter((c, i) => res[i] !== 'passed').map((c) => c.name || c.id).join(', ')} still not passing after ${rounds(id).castRounds} rounds. Please check the character sheets and decide`)); setStage(id, 'needs_input'); return false; }
   // every character passed on its own → one line-up check across them, then the serial gate handles anything it finds
   pipe(id, (p) => { p.cast.state = 'reviewing'; p.cast.lineup = true; });
   const r = await turn(id, 'cast_qa', { round: 'lineup', lineup: true }, ['out/check/cast/review.json'], { session: 'fresh', who: 'cast-qa' });
@@ -504,7 +566,7 @@ async function castSerial(id, prev, firstReview) {
     }
     if (collectNeeds(id, rv.needs_user, 'cast-qa')) return pause(id);
     if (passed(rv)) { pipe(id, (p) => { p.cast.pass = true; p.cast.state = 'passed'; }); chat(id, 'system', L(id, `角色關通過（第 ${round} 輪）`, `Characters passed (round ${round})`)); break; }
-    if (round >= CONFIG.castRounds) { pipe(id, (p) => { p.cast.state = 'failed'; }); chat(id, 'system', L(id, `角色關 ${round} 輪仍未通過，請你看角色設定圖決定`, `Characters still not passing after ${round} rounds. Please check the character sheets and decide`)); setStage(id, 'needs_input'); return false; }
+    if (round >= rounds(id).castRounds) { pipe(id, (p) => { p.cast.state = 'failed'; }); chat(id, 'system', L(id, `角色關 ${round} 輪仍未通過，請你看角色設定圖決定`, `Characters still not passing after ${round} rounds. Please check the character sheets and decide`)); setStage(id, 'needs_input'); return false; }
     pipe(id, (p) => { p.cast.state = 'fixing'; });
     const f = await turn(id, 'cast_fix', { issues: rv.issues || [], round }, ['out/check/cast/sheet.jpg', 'out/check/cast/fixes.json'], { who: 'director' });
     if (!f.ok) return fail(id, 'producing', f);
@@ -528,7 +590,7 @@ async function finalPanel(id) {
     update(id, (j) => { j.critiqueRounds = round; j.lastCritique = { pass: !must.length, must: must.length, at: now() }; });
     const needs = collectNeeds(id, c.needs_user, 'critic');
     if (!must.length) { chat(id, 'system', needs ? L(id, '評審：導演能修的都過了，剩下需要你提供的項目', 'Final review: everything the director can fix is done. What is left needs your input') : L(id, `評審通過（第 ${round} 輪）`, `Final review passed (round ${round})`)); setStage(id, needs ? 'needs_input' : 'done'); return; }
-    if (round > CONFIG.finalRounds) { chat(id, 'system', L(id, `評審仍有 ${must.length} 項必修，已達自動修改上限，請你決定`, `The final review still has ${must.length} must-fix item${must.length > 1 ? 's' : ''} and the automatic fix limit is reached. Please decide`)); setStage(id, 'done'); return; }
+    if (round > rounds(id).finalRounds) { chat(id, 'system', L(id, `評審仍有 ${must.length} 項必修，已達自動修改上限，請你決定`, `The final review still has ${must.length} must-fix item${must.length > 1 ? 's' : ''} and the automatic fix limit is reached. Please decide`)); setStage(id, 'done'); return; }
     const msg = must.map((m, i) => `${i + 1}. [${m.shot || '全片'}${m.time != null ? ' ' + m.time + 's' : ''}] ${m.issue}${m.fix ? ' → 建議：' + m.fix : ''}`).join('\n');
     chat(id, 'system', L(id, `評審第 ${round} 輪：${must.length} 項必修，交回導演（每項要附修改前後對照）`, `Final review round ${round}: ${must.length} must-fix item${must.length > 1 ? 's' : ''}, sent back to the director (each fix needs before/after proof)`));
     if (!(await step(id, 'revising', 'revise', { message: msg, round }, ['out/video.mp4', 'out/check/fixes.json']))) return;

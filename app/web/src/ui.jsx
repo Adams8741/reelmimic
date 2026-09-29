@@ -3,6 +3,8 @@ import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 're
 // ---------- icons (SF-Symbols-like strokes) ----------
 const P = {
   plus: 'M12 5v14M5 12h14',
+  minus: 'M5 12h14',
+  sliders: 'M4 7h9M17 7h3M15 4.5v5M4 17h3M11 17h9M9 14.5v5',
   link: 'M10 14a4.5 4.5 0 0 0 6.4 0l3-3a4.5 4.5 0 0 0-6.4-6.4l-1 1M14 10a4.5 4.5 0 0 0-6.4 0l-3 3a4.5 4.5 0 0 0 6.4 6.4l1-1',
   clip: 'M20 11.5 12.3 19.2a5 5 0 0 1-7.1-7.1l8.1-8.1a3.3 3.3 0 0 1 4.7 4.7l-8.1 8.1a1.7 1.7 0 0 1-2.4-2.4l7.4-7.4',
   up: 'M12 19V5M5.5 11.5 12 5l6.5 6.5',
@@ -129,3 +131,36 @@ export const AutoText = React.forwardRef(function AutoText({ value, onChange, mi
   useLayoutEffect(() => { const t = ref.current; if (!t) return; t.style.height = 'auto'; t.style.height = t.scrollHeight + 'px'; }, [value]);
   return <textarea ref={ref} rows={minRows} value={value} onChange={onChange} {...rest} />;
 });
+
+// ---------- review/fix round limits (per project) ----------
+// value: the project's own settings (may be partial); defaults: server defaults. Changing a number calls onChange with
+// the full next value; a number equal to its default is sent as null (= follow the default).
+export const ROUND_FIELDS = [
+  ['castRounds', '角色關', '每個角色最多審幾輪'],
+  ['chunkRounds', '每段鏡頭', '每段最多審幾輪'],
+  ['finalRounds', '最後評審', '自動修改最多幾輪'],
+];
+export function RoundsEditor({ value = {}, defaults = {}, min = 1, max = 10, onChange, disabled }) {
+  const set = (k, v) => onChange({ ...value, [k]: v === defaults[k] ? null : v });
+  return (
+    <div className="rounds">
+      {ROUND_FIELDS.map(([k, label, hint]) => {
+        const v = value[k] ?? defaults[k], custom = value[k] != null && value[k] !== defaults[k];
+        return (
+          <div className="rd-row" key={k}>
+            <div className="grow"><b>{label}</b><div className="tiny faint">{hint}{custom ? ` · 預設 ${defaults[k]}` : ' · 預設'}</div></div>
+            <div className="stepper">
+              <button className="icon-btn" disabled={disabled || v <= min} onClick={() => set(k, v - 1)} aria-label="減少"><I n="minus" /></button>
+              <span className={`num ${custom ? 'custom' : ''}`}>{v}</span>
+              <button className="icon-btn" disabled={disabled || v >= max} onClick={() => set(k, v + 1)} aria-label="增加"><I n="plus" /></button>
+            </div>
+          </div>
+        );
+      })}
+      <div className="rd-foot">
+        <div className="tiny faint rd-note">到了上限還沒通過，會暫停請你決定，不會一直來回修改。輪數多，品質有機會更好，但時間和 AI 用量也會增加。</div>
+        {ROUND_FIELDS.some(([k]) => value[k] != null && value[k] !== defaults[k]) && <button className="btn sm plain" disabled={disabled} onClick={() => onChange(Object.fromEntries(ROUND_FIELDS.map(([k]) => [k, null])))}>恢復預設</button>}
+      </div>
+    </div>
+  );
+}
