@@ -3,7 +3,8 @@
 //   WEBHOOK_URL          any URL; gets a JSON POST { event, id, title, stage, message, url } (Slack, n8n, Zapier, your own bot…)
 //   REELMIMIC_URL        base of the links in messages (default http://localhost:<PORT>)
 // Only stage changes notify, once each; stages already reached before the server started are never re-sent.
-import { existsSync, readFileSync, statSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
+import { readFile, stat } from 'node:fs/promises';
 import { join } from 'node:path';
 import type { Job, Plan, Stage } from '../shared/types.ts';
 import * as J from './jobs.ts';
@@ -11,7 +12,6 @@ import * as J from './jobs.ts';
 export type NotifyEvent = 'plan_ready' | 'needs_input' | 'done' | 'error';
 const EVENT: Partial<Record<Stage, NotifyEvent>> = { plan_review: 'plan_ready', needs_input: 'needs_input', done: 'done', error: 'error' };
 const DISCORD_FILE_LIMIT = 10 * 1024 ** 2;   // webhook uploads on a server without boosts
-const CANCELLED = ['已取消', 'Cancelled'];   // the user pressed cancel: they know
 
 const titleOf = (job: Job) => { try { return (JSON.parse(readFileSync(join(J.dirOf(job.id), 'plan.json'), 'utf8')) as Plan).title || job.title; } catch { return job.title; } };
 export const linkOf = (id: string) => `${(process.env.REELMIMIC_URL || `http://localhost:${process.env.PORT || 4318}`).replace(/\/$/, '')}/#/p/${id}`;
@@ -39,10 +39,11 @@ export async function send(job: Job, event: NotifyEvent) {
   const title = titleOf(job), text = messageOf(job, event, title), url = linkOf(job.id), work = [];
   if (process.env.DISCORD_WEBHOOK_URL) {
     const content = `${text}\n${url}`.slice(0, 2000), video = join(J.dirOf(job.id), 'out', 'video.mp4');
-    if (event === 'done' && existsSync(video) && statSync(video).size <= DISCORD_FILE_LIMIT) {
+    const size = event === 'done' ? await stat(video).then((s) => s.size, () => Infinity) : Infinity;
+    if (size <= DISCORD_FILE_LIMIT) {
       const form = new FormData();
       form.append('payload_json', JSON.stringify({ content }));
-      form.append('files[0]', new Blob([readFileSync(video)], { type: 'video/mp4' }), 'video.mp4');
+      form.append('files[0]', new Blob([await readFile(video)], { type: 'video/mp4' }), 'video.mp4');
       work.push(post(process.env.DISCORD_WEBHOOK_URL, { body: form }, 'Discord'));
     } else work.push(post(process.env.DISCORD_WEBHOOK_URL, { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ content }) }, 'Discord'));
   }
@@ -58,7 +59,7 @@ export function startNotifier() {
     if (ev.type !== 'job') return;
     const { stage } = ev.job, prev = last.get(id), event = EVENT[stage];
     last.set(id, stage);
-    if (prev === stage || !event || (stage === 'error' && CANCELLED.includes(ev.job.error || ''))) return;
+    if (prev === stage || !event || (stage === 'error' && Object.values(J.CANCELLED).includes(ev.job.error || ''))   // the user pressed cancel: they know) return;
     send(ev.job, event).catch((e) => console.error('notify:', e));
   };
   J.bus.on('job', onJob);
