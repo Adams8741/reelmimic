@@ -59,7 +59,8 @@ export function startNotifier() {
     if (ev.type !== 'job') return;
     const { stage } = ev.job, prev = last.get(id), event = EVENT[stage];
     last.set(id, stage);
-    if (prev === stage || !event || (stage === 'error' && Object.values(J.CANCELLED).includes(ev.job.error || ''))   // the user pressed cancel: they know) return;
+    // a cancel is the user's own doing: no message for it
+    if (prev === stage || !event || (stage === 'error' && Object.values(J.CANCELLED).includes(ev.job.error || ''))) return;
     send(ev.job, event).catch((e) => console.error('notify:', e));
   };
   J.bus.on('job', onJob);
