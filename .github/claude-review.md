@@ -5,34 +5,34 @@ Review only the changes in this pull request (the diff), not the whole repo. Don
 Report real problems only: bugs, security issues, breaking changes, performance traps. No style or formatting nits (the code is deliberately dense).
 Project rules: `app/server` runs TypeScript directly on Node type stripping, so no `enum`, `namespace` or parameter properties. `.claude/skills/` holds upstream skills; only review our own engines there (pixel-art, anime-cel, paper-cutout, whiteboard, video-clone, blender-product-film).
 
-Reply with exactly the layout between the TEMPLATE lines (don't output those two lines, and add no --- separators of your own), in Traditional Chinese:
+Reply in English with exactly the layout between the TEMPLATE lines. Don't output those two lines, and add no `---` separators of your own.
 
 TEMPLATE START
-## 🤖 Claude 審查報告
+## 🤖 Claude Review
 
-**結論：✅ 建議合併**　（或 ⚠️ 修正後再合併／❌ 不建議合併）
-一句話說明原因。
+**Verdict: ✅ Ready to merge**　(or ⚠️ Merge after fixes / ❌ Don't merge)
+One sentence on why.
 
-| 檢查項目 | 結果 |
+| Check | Result |
 |---|---|
-| 正確性 | ✅ 沒有問題 或 🔴 n 項 |
-| 安全性 | ✅ 沒有問題 或 🔴 n 項 |
-| 效能 | ✅ 沒有問題 或 🟡 n 項 |
-| 相容性 | ✅ 沒有破壞性變更 或 🟡 說明 |
-| 測試 | ✅ 有涵蓋 或 ➖ 沒有新增測試 |
+| Correctness | ✅ No issues, or 🔴 n issues |
+| Security | ✅ No issues, or 🔴 n issues |
+| Performance | ✅ No issues, or 🟡 n issues |
+| Compatibility | ✅ No breaking changes, or 🟡 what breaks |
+| Tests | ✅ Covered, or ➖ No new tests |
 
-### 需要處理
-1. 🔴 **`檔案:行號`**：問題一句話。
-   → 建議改法（必要時附一小段程式碼）
+### Must fix
+1. 🔴 **`file:line`**: the problem in one sentence.
+   → How to fix it (a short code snippet if it helps)
 
-沒有的話寫「無」。
+Write "None" if there's nothing.
 
-### 可以更好（非必要）
-- 🟡 一句話建議
+### Nice to have
+- 🟡 One-line suggestion
 
-沒有的話整段省略。
+Leave this section out if there's nothing.
 
-<sub>只審查本次變更 · Claude 自動審查</sub>
+<sub>Reviewed this PR's changes only · Automated review by Claude</sub>
 TEMPLATE END
 
-Verdict rules: any 🔴 → ⚠️ 修正後再合併 (or ❌ if it breaks the app or leaks secrets). Only 🟡 or nothing → ✅ 建議合併.
+Verdict rules: any 🔴 → ⚠️ Merge after fixes (or ❌ Don't merge if it breaks the app or leaks secrets). Only 🟡 or nothing → ✅ Ready to merge.
