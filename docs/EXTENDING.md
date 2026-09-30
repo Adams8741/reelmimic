@@ -8,10 +8,10 @@ Extension points, from shallow to deep:
 |---|---|---|
 | Add a video style | `.claude/skills/video-clone/styles/<name>.md` | No |
 | Add a production engine (a new drawing / rendering method) | `.claude/skills/<engine>/` (an ordinary agent skill) | No |
-| Change how an agent handles a step | `app/server/prompts.mjs` | Text only, applies on the next turn |
+| Change how an agent handles a step | `app/server/prompts.ts` | Text only, applies on the next turn |
 | Give agents a new tool | `.claude/skills/video-clone/scripts/` | Write the script, then mention it in a prompt / SKILL.md |
-| Plug in another AI director (a new agent CLI) | `app/server/agents/index.mjs` | Yes |
-| Change the steps or order of the production line | `app/server/jobs.mjs` + `prompts.mjs` + `CONTRACT.md` | Yes |
+| Plug in another AI director (a new agent CLI) | `app/server/agents/index.ts` | Yes |
+| Change the steps or order of the production line | `app/server/jobs.ts` + `prompts.ts` + `CONTRACT.md` | Yes |
 
 ---
 
@@ -88,9 +88,9 @@ free.
 If a new engine has its own way of making characters, keep the same rule — "characters defined in shared files, one
 file per character, shots only pass pose parameters" — so the cast gate can review and fix them in parallel.
 
-## 3. Tune agent behaviour (prompts.mjs)
+## 3. Tune agent behaviour (prompts.ts)
 
-Each key in `app/server/prompts.mjs` is one step of the pipeline:
+Each key in `app/server/prompts.ts` is one step of the pipeline:
 
 | Key | Who | Does |
 |---|---|---|
@@ -112,20 +112,20 @@ forward into the setup or build specs is the most effective speed-up.
 
 ## 4. Plug in another AI director
 
-In `app/server/agents/index.mjs`:
+In `app/server/agents/index.ts`:
 
 1. Write `xxxArgs(sessionId, cwd)`: command-line arguments for a non-interactive run that auto-approves file edits
    and can resume a session.
 2. Write `parseXxx(obj, emit, st)`: turn the CLI's JSON stream into the common events:
    `session {id}`, `text {text}`, `thinking {text}`, `tool {name, detail}`, `error {text}`, and finally `done {ok, text}`.
-3. Add the new `kind` to `runAgent` and `agentStatus`, and an option to the picker in the web app's `App.jsx`.
+3. Add the new `kind` to `runAgent` and `agentStatus`, and an option to the picker in the web app's `App.tsx`.
 
 The agent must be able to: read and write files in the repo, run a shell (python, node, ffmpeg), look at images
 (review depends on it) and resume a conversation.
 
 ## 5. Change the production line
 
-Main functions in `app/server/jobs.mjs`:
+Main functions in `app/server/jobs.ts`:
 
 - `production()`: setup → `castGate()` (runs alongside segment building) → `runChunk()` × N → assemble.
 - `castGate()` / `castSerial()`: per-character parallel review and fixing; the serial version is used for a single
@@ -133,13 +133,13 @@ Main functions in `app/server/jobs.mjs`:
 - `finalPanel()`: final critic ⇄ revise.
 - `turn()`: dispatches one agent turn (session handling, global slots, required-file check).
 
-When changing a step, change three places together: `jobs.mjs` (flow), `prompts.mjs` (instructions) and `CONTRACT.md`
-(format of any new file); plus `Project.jsx` if the web app should show it.
+When changing a step, change three places together: `jobs.ts` (flow), `prompts.ts` (instructions) and `CONTRACT.md`
+(format of any new file); plus `Project.tsx` if the web app should show it.
 Parameters (parallelism, rounds per gate) are in `CONFIG` and can also be set through environment variables.
 
 ## 6. Adding UI text / translations
 
-Interface strings are written in Traditional Chinese in the components. `app/web/src/i18n.js` translates the page at
+Interface strings are written in Traditional Chinese in the components. `app/web/src/i18n.ts` translates the page at
 runtime: English comes from the `EN` table (plus `EN_RE` patterns for strings with numbers), Simplified Chinese is
 converted automatically with OpenCC. When you add a new string, add its English entry to `EN`; mark elements that must
 never be translated (user content, file names) with `data-no-i18n`.

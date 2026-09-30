@@ -1,5 +1,8 @@
 // Phase prompts. Each agent turn does exactly one step and writes the files CONTRACT.md defines; the server advances only
 // when those files exist. Same prompts for Claude Code and Codex (skills are referenced by path, no Skill tool needed).
+import type { Lang } from '../shared/types.ts';
+import type { BaseVars, Prompts } from './types.ts';
+
 const SKILL = '.claude/skills/video-clone';
 
 const RULES = `規則：使用者在 inputs/ 提供的自家角色可直接照著做；其他角色與畫面原創（不畫知名既有角色、他人吉祥物或品牌）；
@@ -7,7 +10,7 @@ const RULES = `規則：使用者在 inputs/ 提供的自家角色可直接照�
 外部素材可以自己上網找（圖片、音效、配樂、字型、參考資料）：先用 ${SKILL}/scripts/fetch_assets.py 的授權安全來源；不夠再用網路搜尋，
 每一個都把來源網址、作者、授權寫進 assets/ASSETS.md，授權不明的標「授權未確認」並在回報裡告訴使用者。不下載商業歌曲、不抓他人品牌 Logo 或知名角色圖。`;
 
-const ENGINE = (p) => `企劃核准後，製作引擎已凍結成快照 ${p.dir}/build/engine/<engine>/（SNAPSHOT.json）：製作一律用快照裡的 SKILL.md 與 scripts。
+const ENGINE = (p: BaseVars) => `企劃核准後，製作引擎已凍結成快照 ${p.dir}/build/engine/<engine>/（SNAPSHOT.json）：製作一律用快照裡的 SKILL.md 與 scripts。
 工具本體（.claude/skills/）是唯讀的；需要改引擎就複製到 build/ 裡改，並把「坑、修正、建議合回 skill」寫進 out/lessons.md。`;
 
 // Measured on real runs: ~60% of agent time went to screenshots (one Chrome launch per crop, retries under load) and to
@@ -21,9 +24,9 @@ const SPEED = `效率規則（不能省略任何檢查，只是不浪費時間�
   絕不可以留著背景渲染就結束回合，必須寫的輸出檔（例如 out/video.mp4）在回合結束前一定要已經存在。
 - 先把要看的時間點想好再一次截，不要一張一張截；改完一批問題再一次重截驗證。`;
 
-const LANG_NAME = { 'zh-TW': '繁體中文', en: 'English', 'zh-CN': '简体中文' };
+const LANG_NAME: Record<Lang, string> = { 'zh-TW': '繁體中文', en: 'English', 'zh-CN': '简体中文' };
 
-const HEADER = (p, role = '導演') => `你是「風格克隆影片工作室」的${role} agent，工作目錄是 repo 根目錄。
+const HEADER = (p: BaseVars, role = '導演') => `你是「風格克隆影片工作室」的${role} agent，工作目錄是 repo 根目錄。
 本專案資料夾：${p.dir}（以下路徑都相對於它，除非寫明 repo 根目錄）
 先讀：${SKILL}/SKILL.md（流程與規則）與 ${SKILL}/CONTRACT.md（檔案格式，必須照寫）。
 ${process.env.PYTHON && process.env.PYTHON !== 'python' ? `這台電腦的 Python 指令是 \`${process.env.PYTHON}\`：下面（和 skill 文件）寫 python 的地方都用它執行。
@@ -41,7 +44,7 @@ const EYE = `用人眼逐處檢查（一定要看全解析度的放大截圖，�
   字不壓主體；字幕要把整張圖縮到手機寬度（約 390px 寬）也讀得出來：字高至少畫面高度 4.5%、有描邊或半透明底；沒有色帶、髒污、破圖、閃格、跳格；轉場每個接縫都有。
 - 動作：有預備動作與餘韻、不機械；同一鏡內造型不跳動（例如眼鏡突然變墨鏡）。`;
 
-const QA_OUT = (file, extra = '') => `寫 ${file}（JSON）：${extra}
+const QA_OUT = (file: string, extra = '') => `寫 ${file}（JSON）：${extra}
   "needs_user": [ { "kind": "lyrics|audio|image|text|other", "issue": "缺什麼、為什麼導演自己做不到" } ]  ← 只有必須由使用者提供的東西才放這裡，這類不算缺陷、不要放進問題清單
 每個問題都要寫：鏡頭、秒數或畫面位置、看到什麼（具體）、建議怎麼改（engine 參數或畫法）。不要放「做不到的事」當問題。
 每個問題都要標 "severity"：
@@ -51,7 +54,7 @@ const QA_OUT = (file, extra = '') => `寫 ${file}（JSON）：${extra}
 **pass = 沒有任何 blocker**（polish 照寫，會交給後面的製作 agent 順手處理，不會擋住進度）。
 第 2 輪以後：先核對上一輪的修正；新發現的問題只有 blocker 才能讓這一輪不通過，不要每一輪都用放大鏡找新的小毛病。`;
 
-export const prompts = {
+export const prompts: Prompts = {
   // ---------- pre-production ----------
   style: (p) => `${HEADER(p)}
 

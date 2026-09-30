@@ -1,9 +1,9 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
-import App from './App.jsx';
+import App from './App.tsx';
 import './styles.css';
-import { startI18n } from './i18n.js';
-createRoot(document.getElementById('root')).render(<App />);
+import { startI18n } from './i18n.ts';
+createRoot(document.getElementById('root')!).render(<App />);
 startI18n();
 
 // A tab left open across a rebuild keeps running the old bundle: check once a minute and offer a refresh.

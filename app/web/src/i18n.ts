@@ -3,16 +3,19 @@
 // renders: English through the table below (exact strings + templates for text with numbers), Simplified Chinese through
 // OpenCC (Taiwan → Mainland phrasing), which also converts the AI's own messages. Text the user types is never touched.
 
-export const LANGS = [
+import type { Lang } from '../../shared/types.ts';
+import type { ConverterFunction } from 'opencc-js/t2cn';
+
+export const LANGS: { id: Lang; label: string; short: string }[] = [
   { id: 'en', label: 'English', short: 'EN' },
   { id: 'zh-TW', label: '繁體中文', short: '繁' },
   { id: 'zh-CN', label: '简体中文', short: '简' },
 ];
-const store = { get: (k) => { try { return localStorage.getItem(k); } catch { return null; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch {} } };
-export let lang = LANGS.some((l) => l.id === store.get('lang')) ? store.get('lang') : 'en';   // default for first-time visitors; the menu (top right) remembers a choice
+const store = { get: (k: string) => { try { return localStorage.getItem(k); } catch { return null; } }, set: (k: string, v: string) => { try { localStorage.setItem(k, v); } catch {} } };
+export let lang: Lang = LANGS.some((l) => l.id === store.get('lang')) ? store.get('lang') as Lang : 'en';   // default for first-time visitors; the menu (top right) remembers a choice
 
 // ---------- English ----------
-const EN = {
+const EN: Record<string, string> = {
   // shell & home
   '已連線的 AI 導演': 'Connected AI directors', '切換外觀': 'Toggle appearance', '介面語言': 'Language',
   '丟一支喜歡的影片，': 'Drop in a video you love,', '做出同樣風格的新作品。': 'get a new one in the same style.',
@@ -85,7 +88,7 @@ const EN = {
   '開場': 'Opening', '畫面質感': 'Look & texture', '構圖': 'Composition', '瑕疵': 'Defects', '字幕標題': 'Captions & titles', '節奏連戲': 'Pacing & continuity', '光線材質': 'Light & material', '標題': 'Titles', '節奏': 'Pacing',
   // conversation
   'AI 導演': 'AI director', '對話': 'Chat', '紀錄': 'Log', '你的需求': 'Your brief', '工作中': 'Working', '獨立審查': 'Independent review', '系統': 'System', '審查員': 'Reviewer',
-  '角色審查': 'Cast review', '素材': 'Assets', '思考了': 'Thought for', '個步驟': 'steps', '顯示前面': 'Show earlier', '（見附件）': '(see attachments)',
+  '角色審查': 'Cast review', '思考了': 'Thought for', '個步驟': 'steps', '顯示前面': 'Show earlier', '（見附件）': '(see attachments)',
   '對企劃提意見，例如：S3 的轉場想更誇張…': 'Comment on the plan, e.g. make the S3 transition bigger…',
   '對成片提意見，例如：12 秒那裡太快看不懂…': 'Comment on the film, e.g. too fast to follow at 12 s…',
   '告訴導演怎麼處理，或補充說明…': 'Tell the director what to do, or add details…', '說明要怎麼處理這個問題…': 'Explain how to handle this…',
@@ -93,7 +96,7 @@ const EN = {
   'Enter 送出 · Shift+Enter 換行 · 圖片可以直接貼上或拖進來': 'Enter to send · Shift+Enter for a new line · paste or drop images',
   '附加檔案': 'Attach files', '附加圖片或檔案（也可以直接貼上或拖進來）': 'Attach images or files (you can also paste or drop them)', '送出': 'Send',
   '全部 agent': 'All agents', '搜尋紀錄': 'Search log', '下載紀錄': 'Download log', '沒有紀錄': 'No log entries', '完整紀錄在': 'full log in',
-  '錯誤': 'Error', '查看影格': 'Viewing frames', '閱讀': 'Reading', '寫入': 'Writing', '修改': 'Editing', '尋找檔案': 'Finding files', '搜尋': 'Searching',
+  '查看影格': 'Viewing frames', '閱讀': 'Reading', '寫入': 'Writing', '修改': 'Editing', '尋找檔案': 'Finding files', '搜尋': 'Searching',
   '載入技能': 'Loading skill', '讀取網頁': 'Reading web page', '搜尋網路': 'Web search', '整理待辦': 'Updating todos', '派出子任務': 'Starting subtask',
   '執行指令': 'Running command', '執行': 'Running', '渲染全部影格': 'Rendering all frames', '輸出審查影格': 'Rendering review frames', '編碼成影片': 'Encoding video',
   '渲染影片': 'Rendering video', '檢查動畫檔': 'Checking composition', '和參考片並排比較': 'Comparing with the reference', '分析影片': 'Analyzing video',
@@ -101,12 +104,12 @@ const EN = {
   '截圖檢查': 'Taking screenshots', '安裝套件': 'Installing packages', '下載影片': 'Downloading video', '查看檔案': 'Listing files', '執行 Python': 'Running Python', '執行 Node': 'Running Node',
   '設計角色': 'Designing a character', '抓素材': 'Fetching assets', '整合素材、畫定調畫面': 'Merging assets, painting style frames', '寫企劃核心（分鏡、旁白、素材清單）': 'Writing the plan core (storyboard, narration, asset list)',
   '建置角色與共用素材': 'Setting up characters and shared assets', '檢查角色設定圖': 'Checking character sheets', '修正角色': 'Fixing a character', '製作鏡頭': 'Building shots',
-  '逐格檢查鏡頭': 'Checking shots frame by frame', '修正鏡頭': 'Fixing shots', '組裝成片': 'Assembling the film',
+  '逐格檢查鏡頭': 'Checking shots frame by frame', '修正鏡頭': 'Fixing shots',
   '這一輪因為伺服器重新啟動而中斷。': 'This turn was cut off by a server restart.',
   '▶ 開始': '▶ start', '■ 完成': '■ done', '■ 失敗': '■ failed',
 };
 // text with numbers / names in it
-const EN_RE = [
+const EN_RE: [RegExp, string][] = [
   [/^(\d+) 秒$/, '$1 s'], [/^(\d+) 分 (\d+) 秒$/, '$1 min $2 s'], [/^(\d+) 小時 (\d+) 分$/, '$1 h $2 min'],
   [/^(\d+) 分鐘前$/, '$1 min ago'], [/^(\d+) 小時前$/, '$1 h ago'], [/^(\d+) 天前$/, '$1 d ago'],
   [/^(\d+) 項必修$/, '$1 must-fix'], [/^· (\d+) 項待你提供$/, '· $1 need your input'], [/^(\d+) 張$/, '$1 frames'], [/^張$/, 'frames'],
@@ -131,14 +134,14 @@ const EN_RE = [
 
 // ---------- Simplified Chinese ----------
 // the Traditional→Simplified dictionary (~0.3 MB) is loaded only when someone picks 简体中文
-let toCN = null, loadingCN = null;
+let toCN: ConverterFunction | null = null, loadingCN: Promise<void> | null = null;
 const loadCN = () => loadingCN || (loadingCN = import('opencc-js/t2cn').then((m) => { toCN = m.Converter({ from: 'tw', to: 'cn' }); }));
-const cn = (s) => (toCN ? toCN(s) : s);
+const cn = (s: string) => (toCN ? toCN(s) : s);
 
-function translate(text) {
+function translate(text: string) {
   if (lang === 'zh-TW' || !/[㐀-鿿]/.test(text)) return text;
   if (lang === 'zh-CN') return cn(text);
-  const m = text.match(/^(\s*)([\s\S]*?)(\s*)$/), core = m[2];
+  const m = text.match(/^(\s*)([\s\S]*?)(\s*)$/)!, core = m[2];
   if (EN[core] != null) return m[1] + EN[core] + m[3];
   for (const [re, rep] of EN_RE) if (re.test(core)) return m[1] + core.replace(re, rep) + m[3];
   return text;   // AI-written content and anything unlisted stays as written
@@ -147,14 +150,16 @@ function translate(text) {
 // ---------- DOM pass ----------
 const ATTRS = ['placeholder', 'title', 'aria-label'];
 const SKIP = 'textarea, input, code, pre, script, style, [data-no-i18n]';
-function fixText(n) {
+type TrText = Text & { __tr?: string; __orig?: string };
+type TrEl = Element & { __o?: Record<string, string>; __t?: Record<string, string> };
+function fixText(n: TrText) {
   if (!n.data || !n.parentElement || n.parentElement.closest(SKIP)) return;
   if (n.__tr !== n.data) n.__orig = n.data;          // React (or anything) wrote new source text
-  const out = translate(n.__orig);
+  const out = translate(n.__orig!);
   if (n.data !== out) n.data = out;
   n.__tr = out;
 }
-function fixAttrs(el) {
+function fixAttrs(el: TrEl) {
   if (el.closest && el.closest('[data-no-i18n]')) return;
   el.__o = el.__o || {}; el.__t = el.__t || {};
   for (const a of ATTRS) {
@@ -165,30 +170,31 @@ function fixAttrs(el) {
     el.__t[a] = out;
   }
 }
-function walk(root) {
-  if (root.nodeType === 3) return fixText(root);
-  if (root.nodeType !== 1) return;
+function walk(node: Node) {
+  if (node.nodeType === 3) return fixText(node as TrText);
+  if (node.nodeType !== 1) return;
+  const root = node as Element;
   if (root.hasAttribute && ATTRS.some((a) => root.hasAttribute(a))) fixAttrs(root);
   const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT);
-  for (let n; (n = w.nextNode());) n.nodeType === 3 ? fixText(n) : ATTRS.some((a) => n.hasAttribute(a)) && fixAttrs(n);
+  for (let n: Node | null; (n = w.nextNode());) n.nodeType === 3 ? fixText(n as TrText) : ATTRS.some((a) => (n as Element).hasAttribute(a)) && fixAttrs(n as Element);
 }
-let obs;
+let obs: MutationObserver;
 export async function startI18n() {
   document.documentElement.lang = lang;
   if (lang === 'zh-CN') await loadCN();
   walk(document.body);
   obs = new MutationObserver((list) => {
     for (const m of list) {
-      if (m.type === 'characterData') fixText(m.target);
-      else if (m.type === 'attributes') fixAttrs(m.target);
+      if (m.type === 'characterData') fixText(m.target as TrText);
+      else if (m.type === 'attributes') fixAttrs(m.target as Element);
       else m.addedNodes.forEach(walk);
     }
   });
   obs.observe(document.body, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ATTRS });
 }
-const listeners = new Set();
-export const onLang = (fn) => { listeners.add(fn); return () => listeners.delete(fn); };
-export async function setLang(id) {
+const listeners = new Set<(id: Lang) => void>();
+export const onLang = (fn: (id: Lang) => void) => { listeners.add(fn); return () => listeners.delete(fn); };
+export async function setLang(id: Lang) {
   if (id === 'zh-CN') await loadCN();
   lang = id; store.set('lang', id); document.documentElement.lang = id;
   walk(document.body); listeners.forEach((fn) => fn(id));

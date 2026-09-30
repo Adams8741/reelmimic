@@ -9,7 +9,7 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-7A6BFF)](LICENSE)
 [![Claude Code](https://img.shields.io/badge/Claude_Code-supported-E86BD2)](https://docs.anthropic.com/en/docs/claude-code)
 [![Codex CLI](https://img.shields.io/badge/Codex_CLI-supported-FF9D5C)](https://github.com/openai/codex)
-![Node 20+](https://img.shields.io/badge/node-20%2B-5B57F0)
+![Node 22.18+](https://img.shields.io/badge/node-22.18%2B-5B57F0)
 ![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-5B57F0)
 
 **English** · [繁體中文](README.zh-TW.md) · [简体中文](README.zh-CN.md)
@@ -97,7 +97,7 @@ The whole thing runs on your own computer, with your own Claude Code or Codex.
 
 ## Getting started
 
-You'll need Node.js 20+, Python 3.10+, FFmpeg, Chrome, and either
+You'll need Node.js 22.18+, Python 3.10+, FFmpeg, Chrome, and either
 [Claude Code](https://docs.anthropic.com/en/docs/claude-code) or [Codex CLI](https://github.com/openai/codex) (logged in).
 
 ```bash

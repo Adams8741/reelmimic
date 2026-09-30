@@ -1,4 +1,6 @@
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import type { CSSProperties, ReactNode, TextareaHTMLAttributes } from 'react';
+import type { RoundKey, Rounds } from '../../shared/types.ts';
 
 // ---------- icons (SF-Symbols-like strokes) ----------
 const P = {
@@ -37,7 +39,8 @@ const P = {
   mag: 'M10.5 4.5a6 6 0 1 1 0 12 6 6 0 0 1 0-12ZM15 15l5 5M8 10.5h5',
   stop: 'M7 7h10v10H7z',
 };
-export const I = ({ n, s, style, className = '' }) => (
+export type IconName = keyof typeof P;
+export const I = ({ n, s, style, className = '' }: { n: IconName; s?: number; style?: CSSProperties; className?: string }) => (
   <svg className={`ico ${className}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={s || 1.8} strokeLinecap="round" strokeLinejoin="round" style={style} aria-hidden="true"><path d={P[n]} /></svg>
 );
 
@@ -51,13 +54,14 @@ export const BrandMark = () => (
   </svg>
 );
 
-export const Orb = ({ size = 56, live, idle, className = '' }) => <div className={`orb ${live ? 'live' : ''} ${idle ? 'idle' : ''} ${className}`} style={{ '--s': `${size}px` }}><i /></div>;
+export const Orb = ({ size = 56, live, idle, className = '' }: { size?: number; live?: boolean; idle?: boolean; className?: string }) => <div className={`orb ${live ? 'live' : ''} ${idle ? 'idle' : ''} ${className}`} style={{ '--s': `${size}px` } as CSSProperties}><i /></div>;
 
 // ---------- segmented control with a sliding thumb ----------
-export function Seg({ value, options, onChange }) {
-  const ref = useRef(), [th, setTh] = useState(null);
+export type SegOption<T extends string> = { value: T; label: ReactNode; disabled?: boolean; title?: string };
+export function Seg<T extends string>({ value, options, onChange }: { value: T; options: SegOption<T>[]; onChange: (v: T) => void }) {
+  const ref = useRef<HTMLDivElement>(null), [th, setTh] = useState<{ w: number; x: number } | null>(null);
   useLayoutEffect(() => {
-    const m = () => { const b = ref.current?.querySelector(`[data-v="${value}"]`); if (b) setTh({ w: b.offsetWidth, x: b.offsetLeft }); };
+    const m = () => { const b = ref.current?.querySelector<HTMLElement>(`[data-v="${value}"]`); if (b) setTh({ w: b.offsetWidth, x: b.offsetLeft }); };
     m(); addEventListener('resize', m); return () => removeEventListener('resize', m);
   }, [value, options.map((o) => o.value).join()]);
   return (
@@ -68,7 +72,7 @@ export function Seg({ value, options, onChange }) {
   );
 }
 
-export const Ring = ({ value = 0, size = 64, stroke = 6 }) => {
+export const Ring = ({ value = 0, size = 64, stroke = 6 }: { value?: number; size?: number; stroke?: number }) => {
   const r = (size - stroke) / 2, c = 2 * Math.PI * r;
   return (
     <div className="ring" style={{ width: size, height: size }}>
@@ -86,37 +90,37 @@ export function useNow(active = true, ms = 1000) {
   useEffect(() => { if (!active) return; const t = setInterval(() => setN(Date.now()), ms); return () => clearInterval(t); }, [active, ms]);
   return n;
 }
-export const dur = (ms) => {
+export const dur = (ms: number) => {
   const s = Math.max(0, Math.round(ms / 1000));
   if (s < 60) return `${s} 秒`;
   const m = Math.floor(s / 60);
   if (m < 60) return `${m} 分 ${s % 60} 秒`;
   return `${Math.floor(m / 60)} 小時 ${m % 60} 分`;
 };
-export const clock = (ms) => { const s = Math.max(0, Math.floor(ms / 1000)); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; };
-export const ago = (iso) => {
+export const clock = (ms: number) => { const s = Math.max(0, Math.floor(ms / 1000)); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; };
+export const ago = (iso?: string) => {
   if (!iso) return '';
   const s = (Date.now() - new Date(iso).getTime()) / 1000;
   if (s < 60) return '剛剛'; if (s < 3600) return `${Math.floor(s / 60)} 分鐘前`; if (s < 86400) return `${Math.floor(s / 3600)} 小時前`;
   return `${Math.floor(s / 86400)} 天前`;
 };
-export const fmt = (x) => (x == null ? '' : `${Number(x).toFixed(1)}s`);
+export const fmt = (x?: number | null) => (x == null ? '' : `${Number(x).toFixed(1)}s`);
 
 // ---------- minimal markdown ----------
-export function Md({ src }) {
+export function Md({ src }: { src?: string | null }) {
   const html = useMemo(() => {
-    const esc = (t) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-    const inl = (t) => esc(t).replace(/`([^`]+)`/g, '<code>$1</code>').replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>');
-    const out = [], L = (src || '').split('\n');
+    const esc = (t: string) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    const inl = (t: string) => esc(t).replace(/`([^`]+)`/g, '<code>$1</code>').replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>');
+    const out: string[] = [], L = (src || '').split('\n');
     for (let i = 0; i < L.length; i++) {
       const l = L[i];
       if (/^\s*\|/.test(l)) {
-        const rows = []; while (i < L.length && /^\s*\|/.test(L[i])) { if (!/^\s*\|[\s:|-]+\|\s*$/.test(L[i])) rows.push(L[i].trim().replace(/^\||\|$/g, '').split('|')); i++; } i--;
+        const rows: string[][] = []; while (i < L.length && /^\s*\|/.test(L[i])) { if (!/^\s*\|[\s:|-]+\|\s*$/.test(L[i])) rows.push(L[i].trim().replace(/^\||\|$/g, '').split('|')); i++; } i--;
         out.push('<table>' + rows.map((r, k) => '<tr>' + r.map((c) => `<${k ? 'td' : 'th'}>${inl(c.trim())}</${k ? 'td' : 'th'}>`).join('') + '</tr>').join('') + '</table>');
-      } else if (/^#{1,4} /.test(l)) { const n = l.match(/^#+/)[0].length; out.push(`<h${Math.min(n + 1, 4)}>${inl(l.replace(/^#+ /, ''))}</h${Math.min(n + 1, 4)}>`); }
+      } else if (/^#{1,4} /.test(l)) { const n = l.match(/^#+/)![0].length; out.push(`<h${Math.min(n + 1, 4)}>${inl(l.replace(/^#+ /, ''))}</h${Math.min(n + 1, 4)}>`); }
       else if (/^>\s?/.test(l)) out.push(`<blockquote>${inl(l.replace(/^>\s?/, ''))}</blockquote>`);
-      else if (/^\s*\d+\. /.test(l)) { const items = []; while (i < L.length && /^\s*\d+\. /.test(L[i])) { items.push(`<li>${inl(L[i].replace(/^\s*\d+\. /, ''))}</li>`); i++; } i--; out.push(`<ol>${items.join('')}</ol>`); }
-      else if (/^\s*[-*] /.test(l)) { const items = []; while (i < L.length && /^\s*[-*] /.test(L[i])) { items.push(`<li>${inl(L[i].replace(/^\s*[-*] /, ''))}</li>`); i++; } i--; out.push(`<ul>${items.join('')}</ul>`); }
+      else if (/^\s*\d+\. /.test(l)) { const items: string[] = []; while (i < L.length && /^\s*\d+\. /.test(L[i])) { items.push(`<li>${inl(L[i].replace(/^\s*\d+\. /, ''))}</li>`); i++; } i--; out.push(`<ol>${items.join('')}</ol>`); }
+      else if (/^\s*[-*] /.test(l)) { const items: string[] = []; while (i < L.length && /^\s*[-*] /.test(L[i])) { items.push(`<li>${inl(L[i].replace(/^\s*[-*] /, ''))}</li>`); i++; } i--; out.push(`<ul>${items.join('')}</ul>`); }
       else if (l.trim()) out.push(`<p>${inl(l)}</p>`);
     }
     return out.join('');
@@ -125,9 +129,9 @@ export function Md({ src }) {
 }
 
 // textarea that grows with its content
-export const AutoText = React.forwardRef(function AutoText({ value, onChange, minRows = 1, ...rest }, outer) {
-  const ref = useRef();
-  React.useImperativeHandle(outer, () => ref.current);
+export const AutoText = React.forwardRef<HTMLTextAreaElement, TextareaHTMLAttributes<HTMLTextAreaElement> & { minRows?: number }>(function AutoText({ value, onChange, minRows = 1, ...rest }, outer) {
+  const ref = useRef<HTMLTextAreaElement>(null);
+  React.useImperativeHandle(outer, () => ref.current as HTMLTextAreaElement);
   useLayoutEffect(() => { const t = ref.current; if (!t) return; t.style.height = 'auto'; t.style.height = t.scrollHeight + 'px'; }, [value]);
   return <textarea ref={ref} rows={minRows} value={value} onChange={onChange} {...rest} />;
 });
@@ -135,13 +139,14 @@ export const AutoText = React.forwardRef(function AutoText({ value, onChange, mi
 // ---------- review/fix round limits (per project) ----------
 // value: the project's own settings (may be partial); defaults: server defaults. Changing a number calls onChange with
 // the full next value; a number equal to its default is sent as null (= follow the default).
-export const ROUND_FIELDS = [
+export const ROUND_FIELDS: [RoundKey, string, string][] = [
   ['castRounds', '角色關', '每個角色最多審幾輪'],
   ['chunkRounds', '每段鏡頭', '每段最多審幾輪'],
   ['finalRounds', '最後評審', '自動修改最多幾輪'],
 ];
-export function RoundsEditor({ value = {}, defaults = {}, min = 1, max = 10, onChange, disabled }) {
-  const set = (k, v) => onChange({ ...value, [k]: v === defaults[k] ? null : v });
+export type RoundValues = Partial<Record<RoundKey, number | null>>;
+export function RoundsEditor({ value = {}, defaults, min = 1, max = 10, onChange, disabled }: { value?: RoundValues; defaults: Rounds; min?: number; max?: number; onChange: (next: RoundValues) => void; disabled?: boolean }) {
+  const set = (k: RoundKey, v: number) => onChange({ ...value, [k]: v === defaults[k] ? null : v });
   return (
     <div className="rounds">
       {ROUND_FIELDS.map(([k, label, hint]) => {
