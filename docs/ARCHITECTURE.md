@@ -3,7 +3,7 @@
 # Architecture
 
 ReelMimic has three layers: the **web app** (React), the **server** (Node — runs the workflow and dispatches
-agents) and the **agent workspace** (the repo root, where Claude Code or Codex read skills, write files and render).
+agents; both are TypeScript and share their API types in `app/shared/types.ts`) and the **agent workspace** (the repo root, where Claude Code or Codex read skills, write files and render).
 The layers talk only through **files**: agents write files as specified in `CONTRACT.md`, the server decides whether a
 step is done by checking whether the files it must produce were updated, and the web app renders those files directly.
 So you can swap the agent, add an engine or change the UI without touching the other layers.
@@ -13,11 +13,11 @@ Browser (app/web, React + Vite)
    │  REST + Server-Sent Events
    ▼
 Server (app/server)
-   ├─ index.mjs          HTTP API, uploads, SSE, project files (/files/:id/*)
-   ├─ env.mjs            loads ~/.reelmimic/secrets.json at startup
-   ├─ jobs.mjs           workflow state machine + production scheduling (order, parallelism, pausing)
-   ├─ prompts.mjs        the instructions each step gives its agent (edits apply on the next turn, no restart)
-   └─ agents/index.mjs   agent adapters: Claude Code / Codex → one event stream
+   ├─ index.ts          HTTP API, uploads, SSE, project files (/files/:id/*)
+   ├─ env.ts            loads ~/.reelmimic/secrets.json at startup
+   ├─ jobs.ts           workflow state machine + production scheduling (order, parallelism, pausing)
+   ├─ prompts.ts        the instructions each step gives its agent (edits apply on the next turn, no restart)
+   └─ agents/index.ts   agent adapters: Claude Code / Codex → one event stream
    │  spawn (prompt on stdin, events streamed on stdout)
    ▼
 Agent workspace (repo root)
@@ -110,7 +110,7 @@ projects/<id>/
 
 ## 4. Agent adapters
 
-`agents/index.mjs` turns both CLIs into the same events: `session`, `text`, `thinking`, `tool`, `error`, `done`.
+`agents/index.ts` turns both CLIs into the same events: `session`, `text`, `thinking`, `tool`, `error`, `done`.
 
 | | Claude Code | Codex |
 |---|---|---|
@@ -123,13 +123,13 @@ builder (kept across fix rounds); reviewers always start fresh.
 
 ## 5. Web app
 
-- `App.jsx`: home (composer card, project list), routing, language menu.
-- `Project.jsx`: project page with tabs Final / Production line / Plan / Reference analysis; pause and error cards,
+- `App.tsx`: home (composer card, project list), routing, language menu.
+- `Project.tsx`: project page with tabs Final / Production line / Plan / Reference analysis; pause and error cards,
   required inputs and lyric timing, time-stamped notes on the video.
-- `Chat.jsx`: conversation and "thinking": merges `job.chat` with the event log; working agents show as live cards
+- `Chat.tsx`: conversation and "thinking": merges `job.chat` with the event log; working agents show as live cards
   (plain-language steps, timers, thumbnails of frames they looked at); finished replies collapse into
   "Thought for N s · M steps"; plus a raw log tab.
-- `i18n.js`: interface language (繁體中文 source, English table, 简体中文 via OpenCC).
+- `i18n.ts`: interface language (繁體中文 source, English table, 简体中文 via OpenCC).
 - Live updates: `GET /api/projects/:id/events` (SSE).
 
 ## 6. HTTP API

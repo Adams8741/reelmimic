@@ -9,7 +9,7 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-7A6BFF)](LICENSE)
 [![Claude Code](https://img.shields.io/badge/Claude_Code-supported-E86BD2)](https://docs.anthropic.com/en/docs/claude-code)
 [![Codex CLI](https://img.shields.io/badge/Codex_CLI-supported-FF9D5C)](https://github.com/openai/codex)
-![Node 20+](https://img.shields.io/badge/node-20%2B-5B57F0)
+![Node 22.18+](https://img.shields.io/badge/node-22.18%2B-5B57F0)
 ![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-5B57F0)
 
 [English](README.md) · **繁體中文** · [简体中文](README.zh-CN.md)
@@ -86,7 +86,7 @@ ReelMimic 學的是參考片的做法，不是把原本的畫面、角色或素�
 
 ## 開始用
 
-先裝好這些：Node.js 20 以上、Python 3.10 以上、FFmpeg、Chrome，還有 [Claude Code](https://docs.anthropic.com/en/docs/claude-code) 或 [Codex CLI](https://github.com/openai/codex) 其中一個（要先登入）。
+先裝好這些：Node.js 22.18 以上、Python 3.10 以上、FFmpeg、Chrome，還有 [Claude Code](https://docs.anthropic.com/en/docs/claude-code) 或 [Codex CLI](https://github.com/openai/codex) 其中一個（要先登入）。
 
 ```bash
 git clone https://github.com/edenfunf/reelmimic.git && cd reelmimic

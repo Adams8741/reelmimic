@@ -4,4 +4,4 @@ cd /d "%~dp0app"
 if not exist node_modules call npm install
 if not exist dist call npm run build
 start "" http://localhost:4318
-node server\index.mjs
+node server\index.ts

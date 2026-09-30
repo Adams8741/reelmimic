@@ -11,11 +11,11 @@ ReelMimic 由三层组成：**网站**（React）、**服务器**（Node，负�
    │  REST + Server-Sent Events
    ▼
 服务器（app/server）
-   ├─ index.mjs          HTTP API、上传、SSE、提供项目文件（/files/:id/*）
-   ├─ env.mjs            启动时加载 ~/.reelmimic/secrets.json
-   ├─ jobs.mjs           流程状态机 + 生产线调度（谁先谁后、平行几个、何时暂停）
-   ├─ prompts.mjs        每个步骤给 agent 的指令（改档后下一轮就生效，不用重启）
-   └─ agents/index.mjs   agent 转接层：Claude Code / Codex → 统一事件
+   ├─ index.ts          HTTP API、上传、SSE、提供项目文件（/files/:id/*）
+   ├─ env.ts            启动时加载 ~/.reelmimic/secrets.json
+   ├─ jobs.ts           流程状态机 + 生产线调度（谁先谁后、平行几个、何时暂停）
+   ├─ prompts.ts        每个步骤给 agent 的指令（改档后下一轮就生效，不用重启）
+   └─ agents/index.ts   agent 转接层：Claude Code / Codex → 统一事件
    │  spawn（stdin 给指令，stdout 串流事件）
    ▼
 agent 工作区（repo 根目录）
@@ -97,7 +97,7 @@ projects/<id>/
 
 ## 4. Agent 转接层
 
-`agents/index.mjs` 把两种 CLI 统一成同一组事件：`session`、`text`、`thinking`、`tool`、`error`、`done`。
+`agents/index.ts` 把两种 CLI 统一成同一组事件：`session`、`text`、`thinking`、`tool`、`error`、`done`。
 
 | | Claude Code | Codex |
 |---|---|---|
@@ -109,10 +109,10 @@ projects/<id>/
 
 ## 5. 网站
 
-- `App.jsx`：首页（输入卡片、项目列表）、路由、语言菜单。
-- `Project.jsx`：项目页，分页为成品／生产线／企划／参考片拆解；暂停卡、错误卡、必要素材与歌词对时、视频时间点留言。
-- `Chat.jsx`：对话与「思考」：把 `job.chat` 与事件纪录合并，工作中的 agent 显示成即时卡片（白话步骤、计时、看过的影格缩略图），完成的回复收成「思考了 N 秒 · M 个步骤」；另有原始纪录分页。
-- `i18n.js`：界面语言（繁體中文为原文、English 对照表、简体中文由 OpenCC 转换）。
+- `App.tsx`：首页（输入卡片、项目列表）、路由、语言菜单。
+- `Project.tsx`：项目页，分页为成品／生产线／企划／参考片拆解；暂停卡、错误卡、必要素材与歌词对时、视频时间点留言。
+- `Chat.tsx`：对话与「思考」：把 `job.chat` 与事件纪录合并，工作中的 agent 显示成即时卡片（白话步骤、计时、看过的影格缩略图），完成的回复收成「思考了 N 秒 · M 个步骤」；另有原始纪录分页。
+- `i18n.ts`：界面语言（繁體中文为原文、English 对照表、简体中文由 OpenCC 转换）。
 - 即时更新：`GET /api/projects/:id/events`（SSE）。
 
 ## 6. HTTP API

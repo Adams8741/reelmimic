@@ -13,7 +13,7 @@
 - 每次渲染後抽影格用 Read 看，有問題修完再出片。
 
 ## 工具
-- 需要的程式與安裝方式見 README（`npm run doctor` 會逐項檢查）：Node 20+、Python 3.10+（requirements.txt）、FFmpeg、Chrome、Claude Code 或 Codex CLI。
+- 需要的程式與安裝方式見 README（`npm run doctor` 會逐項檢查）：Node 22.18+、Python 3.10+（requirements.txt）、FFmpeg、Chrome、Claude Code 或 Codex CLI。
 - 找不到 FFmpeg 時看環境變數 `FFMPEG_DIR`；Chrome 看 `CHROME_PATH`；Blender 看 `BLENDER`；API 金鑰在 `~/.reelmimic/secrets.json`（伺服器啟動時載入）。
 - yt-dlp：`python -m yt_dlp`；截圖一律用 `.claude/skills/video-clone/scripts/hf_frames.py`（HyperFrames 專案）或引擎自己的 render 指令。
 

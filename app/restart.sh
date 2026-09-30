@@ -17,6 +17,6 @@ else
   fuser -k $P/tcp 2>/dev/null || true
 fi
 sleep 2
-nohup node app/server/index.mjs > "$LOG" 2>&1 &
+nohup node app/server/index.ts > "$LOG" 2>&1 &
 for i in $(seq 1 20); do curl -s -m 1 localhost:${PORT:-4318}/api/config >/dev/null && { echo "server up"; exit 0; }; sleep 0.5; done
 echo "server did not start"; tail -20 "$LOG"; exit 1

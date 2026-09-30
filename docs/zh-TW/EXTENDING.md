@@ -8,10 +8,10 @@ ReelMimic 的擴充點由淺到深：
 |---|---|---|
 | 加一種影片風格 | `.claude/skills/video-clone/styles/<name>.md` | 不用 |
 | 加一個製作引擎（新的畫法／渲染方式） | `.claude/skills/<engine>/`（一般 agent skill） | 不用 |
-| 調整 agent 在某一步怎麼做 | `app/server/prompts.mjs` | 只改文字，下一輪就生效 |
+| 調整 agent 在某一步怎麼做 | `app/server/prompts.ts` | 只改文字，下一輪就生效 |
 | 加新工具給 agent 用 | `.claude/skills/video-clone/scripts/` | 寫腳本，再在 prompt／SKILL.md 提到它 |
-| 接另一種 AI 導演（新的 agent CLI） | `app/server/agents/index.mjs` | 要 |
-| 改生產線的步驟或順序 | `app/server/jobs.mjs` + `prompts.mjs` + `CONTRACT.md` | 要 |
+| 接另一種 AI 導演（新的 agent CLI） | `app/server/agents/index.ts` | 要 |
+| 改生產線的步驟或順序 | `app/server/jobs.ts` + `prompts.ts` + `CONTRACT.md` | 要 |
 
 ---
 
@@ -73,7 +73,7 @@ ReelMimic 的擴充點由淺到深：
 
 ## 3. 調整 agent 的做法（prompts.mjs）
 
-`app/server/prompts.mjs` 每個鍵對應生產線的一步：
+`app/server/prompts.ts` 每個鍵對應生產線的一步：
 
 | 鍵 | 誰 | 做什麼 |
 |---|---|---|
@@ -93,30 +93,30 @@ ReelMimic 的擴充點由淺到深：
 
 ## 4. 接另一種 AI 導演
 
-在 `app/server/agents/index.mjs`：
+在 `app/server/agents/index.ts`：
 
 1. 寫一個 `xxxArgs(sessionId, cwd)`：無互動、自動核准檔案修改、可接續 session 的命令列參數。
 2. 寫一個 `parseXxx(obj, emit, st)`：把 CLI 的 JSON 串流轉成統一事件：
    `session {id}`、`text {text}`、`thinking {text}`、`tool {name, detail}`、`error {text}`，最後 `done {ok, text}`。
-3. 在 `runAgent` 與 `agentStatus` 加上新的 `kind`，前端 `App.jsx` 的選擇器加一個選項。
+3. 在 `runAgent` 與 `agentStatus` 加上新的 `kind`，前端 `App.tsx` 的選擇器加一個選項。
 
 agent 需要能：讀寫 repo 內檔案、執行 shell（python、node、ffmpeg）、看圖片（審查靠它）、接續對話。
 
 ## 5. 改生產線
 
-`app/server/jobs.mjs` 的主要函式：
+`app/server/jobs.ts` 的主要函式：
 
 - `production()`：setup → `castGate()`（與分段製作同時跑）→ `runChunk()` × N → assemble。
 - `castGate()` / `castSerial()`：每個角色平行審查修正；一個角色或共用檔時走序列版。
 - `finalPanel()`：最後評審 ⇄ 修改。
 - `turn()`：派一次 agent 回合（session 管理、全域名額、必須檔案檢查）。
 
-改步驟時三個地方要一起改：`jobs.mjs`（流程）、`prompts.mjs`（指令）、`CONTRACT.md`（新檔案的格式），前端要顯示的話再改 `Project.jsx`。
+改步驟時三個地方要一起改：`jobs.ts`（流程）、`prompts.ts`（指令）、`CONTRACT.md`（新檔案的格式），前端要顯示的話再改 `Project.tsx`。
 參數（平行數、每關輪數）在 `CONFIG`，也可以用環境變數調整。
 
 ## 6. 介面文字與翻譯
 
-元件裡的介面文字一律寫繁體中文。`app/web/src/i18n.js` 在執行時翻譯整個頁面：英文來自 `EN` 對照表（含數字的字串用 `EN_RE` 樣式），簡體中文由 OpenCC 自動轉換。
+元件裡的介面文字一律寫繁體中文。`app/web/src/i18n.ts` 在執行時翻譯整個頁面：英文來自 `EN` 對照表（含數字的字串用 `EN_RE` 樣式），簡體中文由 OpenCC 自動轉換。
 新增文字時請在 `EN` 補上英文；不該被翻譯的元素（使用者內容、檔名）加 `data-no-i18n`。
 
 ## 7. 開發
