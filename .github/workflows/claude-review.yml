@@ -29,5 +29,7 @@ jobs:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
           trigger_phrase: '@claude'
+          use_sticky_comment: true
           claude_args: |
-            --append-system-prompt "You are reviewing a pull request. Report only real problems: bugs, security issues, broken behaviour, missing error handling that matters. Skip style and formatting: the code is deliberately dense. Project rules: app/server runs TypeScript directly on Node type stripping, so no enum, namespace or parameter properties; .claude/skills/ holds upstream skills we don't review unless the PR changes our own engines (pixel-art, anime-cel, paper-cutout, whiteboard, video-clone, blender-product-film). Put each finding as an inline comment on the line, then one short summary. If nothing is wrong, say so in one line. Write in Traditional Chinese."
+            --max-turns 8
+            --append-system-prompt "Follow .github/claude-review.md exactly: read it first, then review the pull request diff and reply in that format."
