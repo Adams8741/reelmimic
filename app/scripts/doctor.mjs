@@ -30,8 +30,9 @@ const PY = process.env.PYTHON || 'python';
 console.log('\nReelMimic — environment check\n');
 console.log('Core');
 ok(`Node ${process.versions.node}`);
-const pyv = run(PY, ['--version']);
-pyv ? ok(pyv) : bad('Python 3.10+ not found', 'install Python, or set PYTHON=/path/to/python');
+// env.ts only sets PYTHON for a 3.10+ interpreter; the 'python' fallback may be older, so check the version here too
+const pyv = run(PY, ['-c', 'import sys; assert sys.version_info >= (3, 10); print("Python", sys.version.split()[0])']);
+pyv ? ok(pyv) : bad('Python 3.10+ not found', 'install Python 3.10 or newer, or set PYTHON=/path/to/python');
 const ff = run('ffmpeg', ['-version']);
 const ffDir = process.env.FFMPEG_DIR && existsSync(join(process.env.FFMPEG_DIR, IS_WIN ? 'ffmpeg.exe' : 'ffmpeg'));
 ff || ffDir ? ok(`FFmpeg ${(ff || '').split('\n')[0].split(' ')[2] || `(FFMPEG_DIR)`}`) : bad('FFmpeg not found', 'install FFmpeg and put it on PATH, or set FFMPEG_DIR');

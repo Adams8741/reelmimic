@@ -30,6 +30,7 @@ export const ROOT = join(import.meta.dirname, '..', '..');
 export const PROJECTS = process.env.REELMIMIC_PROJECTS ? resolve(process.env.REELMIMIC_PROJECTS) : join(ROOT, 'projects');   // override: tests, a second checkout
 const SCRIPTS = join(ROOT, '.claude', 'skills', 'video-clone', 'scripts');
 const PY = process.env.PYTHON || 'python';
+const noPython = (e: Error) => `${PY} could not be started (${e.message}). Install Python 3.10+, or set PYTHON=/path/to/python`;
 // A review passes when nothing it lists is a blocker (polish items are handed on, they never hold the line)
 const passed = (rv: Review) => { const L = rv.issues || []; return L.length && L.every((x) => x.severity) ? !L.some((x) => x.severity !== 'polish') : !!rv.pass; };
 const shotPassed = (s: ShotEntry) => { const L = s.issues || []; return L.length && L.every((x) => x.severity) ? !L.some((x) => x.severity !== 'polish') : !!s.pass; };
@@ -211,14 +212,17 @@ export function saveLyrics(id: string, text: string): Promise<LyricsResult> {
   if (m.section?.start_s != null && song && !/clip/i.test(song)) args.push('--start', String(m.section.start_s), '--end', String(m.section.end_s));
   log(id, { type: 'tool', name: 'align_lyrics.py', detail: `對時：${song}` });
   return new Promise((resolve) => {
-    const p = spawn(PY, args, { cwd: ROOT, env: { ...process.env, PYTHONIOENCODING: 'utf-8' } }); let o = '';
+    const p = spawn(PY, args, { cwd: ROOT, env: { ...process.env, PYTHONIOENCODING: 'utf-8' } }); let o = '', done = false;
     p.stdout.on('data', (b) => { o += b; }); p.stderr.on('data', () => {});
-    p.on('close', (code) => {
+    const finish = (code: number | null, err?: Error) => {
+      if (done) return; done = true;
       const first = o.split('\n').find((l) => l.startsWith('lines')) || '';
-      log(id, { type: code === 0 ? 'text' : 'error', text: code === 0 ? `歌詞對時完成：${first}` : '歌詞對時失敗' });
+      log(id, { type: code === 0 ? 'text' : 'error', text: code === 0 ? `歌詞對時完成：${first}` : err ? `歌詞對時失敗：${noPython(err)}` : '歌詞對時失敗' });
       if (code === 0) update(id, (j) => { j.needs = (j.needs || []).filter((n) => n.kind !== 'lyrics'); });
       resolve({ ok: code === 0, aligned: code === 0, report: first });
-    });
+    };
+    p.on('error', (e) => finish(null, e));   // e.g. Python not found: without this listener the server crashes
+    p.on('close', (code) => finish(code));
   });
 }
 
@@ -231,11 +235,15 @@ function analyze(id: string): Promise<boolean> {
     const p = spawn(PY, [join(SCRIPTS, 'analyze.py'), src, '--out', join(d, 'analysis')], { cwd: ROOT, env: { ...process.env, PYTHONIOENCODING: 'utf-8' } });
     p.stdout.on('data', (b) => String(b).split('\n').filter(Boolean).forEach((l) => log(id, { type: 'text', text: l })));
     p.stderr.on('data', (b) => { const s = String(b); if (!/Warning|warn\(/i.test(s)) log(id, { type: 'error', text: s.slice(0, 400) }); });
-    p.on('close', (code) => {
+    let done = false;
+    const finish = (code: number | null, err?: Error) => {
+      if (done) return; done = true;
       const ok = code === 0 && existsSync(join(d, 'analysis', 'report.json'));
-      if (!ok) setStage(id, 'error', { failed: 'analyzing', error: 'analyze.py failed' });
+      if (!ok) setStage(id, 'error', { failed: 'analyzing', error: err ? noPython(err) : 'analyze.py failed' });
       resolve(ok);
-    });
+    };
+    p.on('error', (e) => finish(null, e));   // e.g. Python not found: without this listener the server crashes
+    p.on('close', (code) => finish(code));
   });
 }
 
