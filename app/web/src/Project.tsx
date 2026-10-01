@@ -225,7 +225,7 @@ function Asset({ a, file }: { a: PlanAsset; file: FileUrl }) {
   const src = a.file ? file(a.file) : undefined, isImg = src && /\.(jpe?g|png|webp|gif|svg)$/i.test(a.file!), isAud = src && /\.(mp3|m4a|wav|ogg)$/i.test(a.file!);
   return (
     <div className="asset">
-      <div className="pv" style={isImg ? { backgroundImage: `url(${src})` } : undefined}>{isAud ? <audio controls src={src} /> : !isImg && <I n={a.kind === 'music' || a.kind === 'sfx' ? 'music' : a.kind === 'font' ? 'doc' : 'image'} />}</div>
+      <div className="pv" style={isImg ? { backgroundImage: `url("${src}")` } : undefined}>{isAud ? <audio controls src={src} /> : !isImg && <I n={a.kind === 'music' || a.kind === 'sfx' ? 'music' : a.kind === 'font' ? 'doc' : 'image'} />}</div>
       <div className="b"><b>{a.id} · {a.purpose}</b><span className="faint">{ASTATUS[a.status ?? ''] || a.status}{a.source && ` · ${a.source}`}</span>
         <span className={`cap ${a.license ? 'ok' : a.status === 'drawn_in_code' ? '' : 'warn'}`} style={{ justifySelf: 'start', height: 20, fontSize: 11 }}>{a.license || (a.status === 'drawn_in_code' ? '原創' : '授權未填')}</span></div>
     </div>
