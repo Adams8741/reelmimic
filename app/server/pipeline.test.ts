@@ -272,6 +272,17 @@ describe('no characters', () => {
     assert.ok(!calls.some((c) => c.startsWith('cast_')), calls.join(', '));
   });
 
+  test('a project already stuck at setup (missing cast sheet) finishes on retry', async () => {
+    S = base({ chars: [] });
+    const id = newProject('error', { failed: 'producing', error: '缺少輸出：out/check/cast/sheet.jpg', pipeline: { phase: 'setup' } });
+    writeFileSync(join(J.dirOf(id), 'plan.json'), JSON.stringify({ title: 'T', version: 1, characters: [] }));
+    mkdirSync(join(J.dirOf(id), 'build'), { recursive: true });   // the setup turn itself had succeeded
+    writeFileSync(join(J.dirOf(id), 'build', 'production.json'), JSON.stringify({ chunks: S.chunks, characters: [] }));
+    await J.retry(id);
+    assert.equal(J.load(id).stage, 'done', J.load(id).error || '');
+    assert.ok(!calls.includes('setup') && !calls.some((c) => c.startsWith('cast_')), calls.join(', '));
+  });
+
   test('a note while paused in the shot line goes to the shots, not to a cast fix', async () => {
     let s2 = 0;   // S2 fails its first three reviews (the round limit), then passes after the note
     S = base({ chars: [], shotPass: (shot) => shot !== 'S2' || ++s2 > 3 });
